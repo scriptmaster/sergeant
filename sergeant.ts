@@ -34,7 +34,7 @@ if(!existsSync(appsDir, {isDirectory: true})) {
       await build();
       break;
     case /^serve/i.test(command):
-      await serveApps();
+      await serveApps(args[1] || '');
       break;
     case /^(scaffold|create)$/i.test(command):
       await create(args[1] || 'builder', args[2] || 'app_builder');
@@ -59,10 +59,16 @@ async function build() {
   esbuild.stop();
 }
 
-async function serveApps() {
+async function serveApps(appName: string) {
+  const portRangeStart = 3000;
+
+  if(appName && appName[0] != '-') {
+    if (!existsSync(app(appName))) return console.log('No such app: ', app(appName));
+    return await serveRefresh(appName, portRangeStart);
+  }
+  
   console.log('Serving all apps...');
 
-  const portRangeStart = 3000;
   let servers = 0;
   for await (const dirEntry of Deno.readDir(appsDir)) {
     if (dirEntry.isDirectory && dirEntry.name[0] != '.') {
