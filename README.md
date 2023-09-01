@@ -42,6 +42,7 @@ Done
 1. No breaking changes (versioned imports)
 2. SSG over SSR
 3. Always bundle to one-file for 1-SPA
+4. Islands Architecture
 
 ### More...
 4. Support bundling multiple apps, SPAs via micro-services / app-routing
