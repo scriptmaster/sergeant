@@ -1,0 +1,12 @@
+
+div#app {
+    background-color: #fff;
+}
+
+header {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    border-bottom: 1px solid #ddd;
+}

@@ -1,0 +1,10 @@
+{
+    "imports": {
+        "preact": "https://esm.sh/preact@10.17.1?dts"
+    },
+    "compilerOptions": {
+        "jsx": "react-jsx",
+        "jsxFactory": "h",
+        "jsxFragment": "Fragment"
+    }
+}

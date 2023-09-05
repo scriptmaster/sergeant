@@ -1,8 +1,14 @@
 {
-    "imports": {
-        "react": "https://esm.sh/react@18",
-        "preact": "https://esm.sh/preact"
-    },
-    "compilerOptions": {
-    }
+  "imports": {
+    "react": "https://esm.sh/react@18",
+    "preact": "https://esm.sh/preact",
+    "vue": "https://esm.sh/vue"
+  },
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  },
+  "tasks": {
+    "build": "deno run -A sergeant.ts",
+    "install": "deno install -A -f sergeant.ts"
+  }
 }
