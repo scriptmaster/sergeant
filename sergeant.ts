@@ -1,28 +1,17 @@
 import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
 //import { denoPlugins } from "https://deno.land/x/esbuild_deno_loader@0.8.1/mod.ts";
 import { denoPlugins } from "https://esm.sh/gh/scriptmaster/esbuild_deno_loader@0.8.2/mod.ts";
-import { dirname, join } from "https://deno.land/std@0.200.0/path/mod.ts";
+import { dirname, join, extname } from "https://deno.land/std@0.200.0/path/mod.ts";
 import { existsSync } from "https://deno.land/std@0.200.0/fs/mod.ts";
 import {
   ensureDir,
   ensureDirSync,
 } from "https://deno.land/std@0.173.0/fs/ensure_dir.ts";
-import {
-  bgBlue,
-  bgRgb24,
-  bgRgb8,
-  bold,
-  brightGreen,
-  cyan,
-  italic,
-  red,
-  rgb24,
-  rgb8,
-  yellow,
-} from "https://deno.land/std@0.200.0/fmt/colors.ts";
-import { refresh } from "https://deno.land/x/refresh/mod.ts";
-import { serve } from "https://deno.land/std/http/server.ts";
-import { lookup } from "https://deno.land/x/media_types/mod.ts";
+
+import { bgRgb8, brightGreen, cyan, rgb8, } from "https://deno.land/std@0.200.0/fmt/colors.ts";
+import { refresh } from "https://deno.land/x/refresh@1.0.0/mod.ts";
+import { serve } from "https://deno.land/std@0.200.0/http/server.ts";
+import { contentType } from "https://deno.land/std@0.201.0/media_types/content_type.ts";
 
 // To get started:
 // deno install -A -f sergeant.ts; sergeant serve
@@ -56,7 +45,7 @@ if (!existsSync(appsDir, { isDirectory: true })) {
       await serveApps(args[1] || "");
       break;
     case /^(scaffold|create)$/i.test(command):
-      await create(args[1] || "builder", args[2] || "app_builder");
+      create(args[1] || "builder", args[2] || "app_builder");
       break;
     default:
       await buildApps(args[0] || "");
@@ -174,7 +163,7 @@ async function buildApp(appName: string) {
     }
   }
 
-  let result = {};
+  let result = { errors: [] };
   try {
     result = await esbuild.build(esopts);
   } catch (e) {
@@ -206,25 +195,6 @@ function copyFiles(from: string, to: string) {
       console.log("skipped: ", dirEntry.name);
     }
   }
-}
-
-function cssPlugins(opts: {}): esbuild.Plugin[] {
-  const plugins: esbuild.Plugin[] = [];
-  console.log("cssPlugins opts:", opts);
-
-  return plugins;
-}
-
-function writeReact() {
-  //
-}
-
-function writeReact18() {
-  //
-}
-
-function writePreact() {
-  //
 }
 
 const debeounces: Record<string, number | undefined> = {};
@@ -316,7 +286,7 @@ async function serveRefresh(appName: string, port: number) {
       return new Response(body, {
         headers: {
           "content-length": fileSize.toString(),
-          "content-type": lookup(filePath) || "application/octet-stream",
+          "content-type": contentType(extname(filePath)) || "application/octet-stream",
         },
       });
     }
@@ -329,7 +299,7 @@ async function serveRefresh(appName: string, port: number) {
       html.replace("</body>", refreshInjeectScriptMinified + "</body>"),
       {
         headers: {
-          "content-type": lookup(htmlFileName) || "application/octet-stream",
+          "content-type": contentType(extname(htmlFileName)) || "application/octet-stream",
         },
       },
     );
@@ -338,12 +308,12 @@ async function serveRefresh(appName: string, port: number) {
   });
 }
 
-async function create(appType: string, appName: string) {
+function create(appType: string, appName: string) {
   //git clone branch ${appType} from https://github.com/scriptmaster/sergeant_create_app  to  appName
   console.log("Scaffolding ...");
   try {
-    await Deno.run({
-      cmd: [
+    const command = new Deno.Command(Deno.execPath(), {
+      args: [
         "git",
         "clone",
         "--depth=1",
@@ -352,11 +322,14 @@ async function create(appType: string, appName: string) {
         "https://github.com/scriptmaster/sergeant_create_app",
         appsDir + "/" + appName,
       ],
-    }).status();
+    });
+
+    const { code, stdout, stderr } = command.outputSync();
+    console.log(code, stdout, stderr);
   } catch (e) {
     console.error(e);
+    scaffold(join(Deno.cwd(), "apps/app_builder"));
   }
-  //scaffold(join(Deno.cwd(), "apps/app_builder"));
 }
 
 function scaffold(dir: string) {
