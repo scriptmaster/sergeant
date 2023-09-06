@@ -1,14 +1,24 @@
 import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
 import { denoPlugins } from "https://esm.sh/gh/scriptmaster/esbuild_deno_loader@0.8.4/mod.ts";
 //import { denoPlugins } from "../esbuild_deno_loader/mod.ts";
-import { dirname, join, extname } from "https://deno.land/std@0.200.0/path/mod.ts";
+import {
+  dirname,
+  extname,
+  join,
+} from "https://deno.land/std@0.200.0/path/mod.ts";
 import { existsSync } from "https://deno.land/std@0.200.0/fs/mod.ts";
 import {
   ensureDir,
   ensureDirSync,
 } from "https://deno.land/std@0.173.0/fs/ensure_dir.ts";
 
-import { bgRgb8, brightGreen, cyan, rgb8, yellow } from "https://deno.land/std@0.200.0/fmt/colors.ts";
+import {
+  bgRgb8,
+  brightGreen,
+  cyan,
+  rgb8,
+  yellow,
+} from "https://deno.land/std@0.200.0/fmt/colors.ts";
 import { refresh } from "https://deno.land/x/refresh@1.0.0/mod.ts";
 import { serve } from "https://deno.land/std@0.200.0/http/server.ts";
 import { contentType } from "https://deno.land/std@0.201.0/media_types/content_type.ts";
@@ -154,9 +164,12 @@ async function buildApp(appName: string) {
         }
         if (co.jsxFactory) {
           esopts.jsxFactory = co.jsxFactory;
+          if (co.jsxFactory == "h" && !co.jsxFragmentFactory) {
+            co.jsxFragmentFactory = "Fragment";
+          }
         }
-        if (co.jsxFragment) {
-          esopts.jsxFragment = co.jsxFragment;
+        if (co.jsxFragmentFactory) {
+          esopts.jsxFragment = co.jsxFragmentFactory;
         }
       }
     } catch (e) {
@@ -176,16 +189,18 @@ async function buildApp(appName: string) {
 
   // Deno.chdir(restoreCwd);
 
-  const printOutSize = (file = '') => {
+  const printOutSize = (file = "") => {
     if (!existsSync(file)) return;
 
     const sz = Deno.statSync(file).size;
     console.log(
       file,
-      sz < 2048? yellow(sz+'')+' bytes': yellow((Math.ceil(sz / 10)/100)+'')+' KB',
+      sz < 2048
+        ? yellow(sz + "") + " bytes"
+        : yellow((Math.ceil(sz / 10) / 100) + "") + " KB",
       result.errors && result.errors.length ? "Errors: " + result.errors : "",
     );
-  }
+  };
   printOutSize(outfile);
   printOutSize(outfile2);
 }
@@ -293,7 +308,8 @@ async function serveRefresh(appName: string, port: number) {
       return new Response(body, {
         headers: {
           "content-length": fileSize.toString(),
-          "content-type": contentType(extname(filePath)) || "application/octet-stream",
+          "content-type": contentType(extname(filePath)) ||
+            "application/octet-stream",
         },
       });
     }
@@ -306,7 +322,8 @@ async function serveRefresh(appName: string, port: number) {
       html.replace("</body>", refreshInjeectScriptMinified + "</body>"),
       {
         headers: {
-          "content-type": contentType(extname(htmlFileName)) || "application/octet-stream",
+          "content-type": contentType(extname(htmlFileName)) ||
+            "application/octet-stream",
         },
       },
     );

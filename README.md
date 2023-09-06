@@ -60,3 +60,11 @@ sergeant build
 sergeant serve
 sergeant serve --dev
 ```
+
+# Deno Plugins:
+Uses:
+https://github.com/scriptmaster/esbuild_deno_loader
+https://deno.land/x/esbuild_plugin_sass_deno
+
+### Others:
+https://github.com/esbuild/community-plugins#plugins-for-deno
