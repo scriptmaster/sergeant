@@ -1,6 +1,13 @@
 # About Sergeant
 
-A lightweight micro-services producing deno-[p]react SSG-first framework competing with angular for large production apps.
+A lightweight micro-services producing deno-[p]react island-architecture framework competing with angular for large production apps.
+
++ Scaffolding
++ Produces bundles within seconds
++ Supports scss
++ Can handle multiple projects
++ Has livereload
++ denocacheusage: 10MB only, bundle sizes less than 20KB (if u use preact), and 200KB for react.
 
 # Sergeant is production ready from Day-1
 
