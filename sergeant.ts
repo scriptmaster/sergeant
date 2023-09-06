@@ -1,6 +1,6 @@
 import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
-//import { denoPlugins } from "https://deno.land/x/esbuild_deno_loader@0.8.1/mod.ts";
-import { denoPlugins } from "https://esm.sh/gh/scriptmaster/esbuild_deno_loader@0.8.2/mod.ts";
+import { denoPlugins } from "https://esm.sh/gh/scriptmaster/esbuild_deno_loader@0.8.4/mod.ts";
+//import { denoPlugins } from "../esbuild_deno_loader/mod.ts";
 import { dirname, join, extname } from "https://deno.land/std@0.200.0/path/mod.ts";
 import { existsSync } from "https://deno.land/std@0.200.0/fs/mod.ts";
 import {
@@ -8,7 +8,7 @@ import {
   ensureDirSync,
 } from "https://deno.land/std@0.173.0/fs/ensure_dir.ts";
 
-import { bgRgb8, brightGreen, cyan, rgb8, } from "https://deno.land/std@0.200.0/fmt/colors.ts";
+import { bgRgb8, brightGreen, cyan, rgb8, yellow } from "https://deno.land/std@0.200.0/fmt/colors.ts";
 import { refresh } from "https://deno.land/x/refresh@1.0.0/mod.ts";
 import { serve } from "https://deno.land/std@0.200.0/http/server.ts";
 import { contentType } from "https://deno.land/std@0.201.0/media_types/content_type.ts";
@@ -107,6 +107,7 @@ async function buildApp(appName: string) {
   // const outfile = join(dist(appName), 'app-esbuild.esm.js');
   const outdir = dist(appName);
   const outfile = join(dist(appName), entryFile.replace(/\.ts[x]?$/, ".js"));
+  const outfile2 = join(dist(appName), entryFile.replace(/\.ts[x]?$/, ".css"));
 
   console.log(bgRgb8(rgb8("Building:", 0), 6), appName);
 
@@ -175,12 +176,18 @@ async function buildApp(appName: string) {
 
   // Deno.chdir(restoreCwd);
 
-  console.log(
-    outfile,
-    Math.ceil(Deno.statSync(outfile).size / 1024),
-    "KB",
-    result.errors && result.errors.length ? "Errors: " + result.errors : "",
-  );
+  const printOutSize = (file = '') => {
+    if (!existsSync(file)) return;
+
+    const sz = Deno.statSync(file).size;
+    console.log(
+      file,
+      sz < 2048? yellow(sz+'')+' bytes': yellow((Math.ceil(sz / 10)/100)+'')+' KB',
+      result.errors && result.errors.length ? "Errors: " + result.errors : "",
+    );
+  }
+  printOutSize(outfile);
+  printOutSize(outfile2);
 }
 
 function copyFiles(from: string, to: string) {
