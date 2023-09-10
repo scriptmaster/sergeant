@@ -1,6 +1,6 @@
 import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
 //import { denoPlugins } from "https://esm.sh/gh/scriptmaster/esbuild_deno_loader@0.8.4/mod.ts";
-import { denoPlugins } from "./esbuild_deno_loader/mod.ts";
+import { denoPlugins } from "./plugins/esbuild_deno_loader/mod.ts";
 import {
   dirname,
   extname,
@@ -22,8 +22,7 @@ import {
 import { refresh } from "https://deno.land/x/refresh@1.0.0/mod.ts";
 import { serve } from "https://deno.land/std@0.200.0/http/server.ts";
 import { contentType } from "https://deno.land/std@0.201.0/media_types/content_type.ts";
-import { importString } from './import/mod.ts';
-// import * as CoreJS from 'https://esm.sh/core-js';
+import { importString } from './plugins/import/mod.ts';
 
 // To get started:
 // deno install -A -f sergeant.ts; sergeant serve
@@ -76,7 +75,7 @@ async function buildApps(appName = "") {
     console.log("Building all enabled apps:");
 
     for await (const dirEntry of Deno.readDir(appsDir)) {
-      if (dirEntry.isDirectory && dirEntry.name[0] != ".") {
+      if ((dirEntry.isDirectory || dirEntry.isSymlink) && dirEntry.name[0] != ".") {
         await buildApp(dirEntry.name);
       }
     }

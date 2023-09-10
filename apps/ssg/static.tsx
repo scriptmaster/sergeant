@@ -1,7 +1,7 @@
 /** @jsx h */
 import { h } from 'preact';
 import render from 'preact-render-to-string/jsx';
-//import Router from 'preact-router';
+import Router from 'preact-router';
 import { Home } from "./pages/home.tsx";
 import { About } from "./pages/about.tsx";
 import { Search } from "./pages/search.tsx";

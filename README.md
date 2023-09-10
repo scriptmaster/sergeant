@@ -78,22 +78,3 @@ https://deno.land/x/esbuild_plugin_sass_deno
 
 ### Others:
 https://github.com/esbuild/community-plugins#plugins-for-deno
-
-// // // // //
-# New Architecture for microservices
-# SSO Implementation
-# Performance Improvement in the existing
-
-
-# Best Practices document for an SEO product:
-## To re-use react components to marketing, expose your sample dashboard via react-static
-## REST API, graphql gRPC
-## createAPI
-## CQRS
-## Analytics design to not exceed more than 7 filters on the left: 10,000,000
-## For streaming, realtime results, use Websockets
-
-# byte parser to tokens
-# tokens to ast
-ast spec:
-
