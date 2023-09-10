@@ -1,6 +1,6 @@
 import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
-import { denoPlugins } from "https://esm.sh/gh/scriptmaster/esbuild_deno_loader@0.8.4/mod.ts";
-//import { denoPlugins } from "../esbuild_deno_loader/mod.ts";
+//import { denoPlugins } from "https://esm.sh/gh/scriptmaster/esbuild_deno_loader@0.8.4/mod.ts";
+import { denoPlugins } from "./esbuild_deno_loader/mod.ts";
 import {
   dirname,
   extname,
@@ -22,6 +22,8 @@ import {
 import { refresh } from "https://deno.land/x/refresh@1.0.0/mod.ts";
 import { serve } from "https://deno.land/std@0.200.0/http/server.ts";
 import { contentType } from "https://deno.land/std@0.201.0/media_types/content_type.ts";
+import { importString } from './import/mod.ts';
+// import * as CoreJS from 'https://esm.sh/core-js';
 
 // To get started:
 // deno install -A -f sergeant.ts; sergeant serve
@@ -63,7 +65,9 @@ if (!existsSync(appsDir, { isDirectory: true })) {
 }
 
 async function buildApps(appName = "") {
-  if (appName && appName[0] != "-") { //do not mistake for a flag like --dev
+  if(appsDir == 'src') {
+    await buildApp('.');
+  } else if (appName && appName[0] != "-") { //do not mistake for a flag like --dev
     if (!existsSync(app(appName))) {
       return console.log("No such app: ", app(appName));
     }
@@ -203,7 +207,170 @@ async function buildApp(appName: string) {
   };
   printOutSize(outfile);
   printOutSize(outfile2);
+
+
+  try {
+    return await staticRender(appName, esopts);
+  } catch(e) {
+    console.error(e);
+  }
 }
+
+
+interface RenderRoute {
+  path: string;
+  state: object;
+  output?: string;
+  title: string;
+  metas: Meta[];
+
+  layout: string;
+  routes?: RenderRoute[];
+
+  app?: string;
+  component?: string;
+  context?: object;
+}
+type Meta = {name: string, content: string};
+
+
+//@ts-ignore ignore esopts
+async function staticRender(appName: string, esopts: any) {
+  const appDir = app(appName);
+  const distDir = dist(appName);
+  const routesFile = join(appDir, "routes.json");
+  if(!existsSync(routesFile)) {
+    return console.log("No routes file:", routesFile);
+  }
+  const routesJson = JSON.parse(Deno.readTextFileSync(routesFile));
+  // console.log(routes);
+
+  const staticFile = routesJson.file ?? "static.tsx";
+  const staticRenderFile = join(appDir, staticFile);
+  if(!existsSync(staticRenderFile)) {
+    return console.log(`Missing "file": "${staticFile}" from `, routesFile);
+  }
+
+  const staticOpts = Object.assign({}, esopts, {
+    entryPoints: [staticRenderFile],
+    write: false,
+    minify: false,
+    format: 'esm',
+    platform: 'neutral',
+    keepNames: true,
+  });
+
+  let result: {
+    outputFiles?: [{text: ''}]
+  } = {};
+
+  try {
+    result = await esbuild.build(staticOpts);
+  } catch(e) {
+    console.error(e);
+  }
+
+  if (result && result.outputFiles && result.outputFiles[0] && result.outputFiles[0].text) {
+    const text = result.outputFiles[0].text;
+
+    try {
+      const ssg = await importString(text);
+      if (ssg) {
+        const routeFn = ssg.renderRoutes || ssg.renderToString || ssg.renderToStatickMarkup || ssg.render;
+        const shellFn = ssg.shell || ssg.HTMLShell || ssg.HtmlShell || ssg.layout || ssg.HtmlLayout || getDefaultHtmlShellFn();
+        if (!routeFn) {
+          return console.log('No route function found: render(routes) or renderRoutes(routes)');
+        }
+
+        const staticDir = join(distDir, 'static');
+        ensureDirSync(staticDir);
+        console.log(brightGreen('SSG: ' + staticDir));
+
+        renderOutput(staticDir, routesJson.routes, routeFn, shellFn, appDir);
+      }
+    } catch(e) {
+      console.log(e);
+    }
+  }
+
+  return result;
+}
+
+type ReturningArrayFunc<T> = (o: T[]) => T[]
+type RouteFn = ReturningArrayFunc<RenderRoute>;
+type ShellFn = (appHtml: string, ...o2: object[]) => ''
+
+function renderOutput(distDir: string, routes: RenderRoute[], routeFn: RouteFn, shellFn: ShellFn | string, appDir: string): void {
+  const outputs = routeFn(routes || []);
+  if (outputs) {
+    outputs.map((o: RenderRoute) => {
+      if (o.routes) {
+        return renderOutput(distDir, o.routes, routeFn, shellFn, appDir);
+      }
+      const file = join(o.path, 'index.html');
+      console.log("Writing: ", o.path, '=>', file);
+
+      if (o.layout) {
+        shellFn = o.layout
+      }
+
+      if (typeof shellFn == 'string') {
+        // this is a file name;
+        const layoutFile = join(appDir, shellFn as string);
+        if(existsSync(layoutFile)) {
+          const layout = Deno.readTextFileSync(layoutFile);
+          //4 regex: title, metas, html, script
+          o.output = getHtmlShellByLayout(layout, o.output || '', o.state || {}, o.title || '', o.metas || [])
+        }
+      }
+
+      // it could be re-used:
+      if (typeof shellFn == 'function') {
+        o.output = (shellFn as ShellFn)(o.output || '');
+      }
+
+      ensureDirSync(join(distDir, o.path));
+      Deno.writeTextFileSync(join(distDir, file), o.output || '');
+    });
+  }
+}
+
+function getHtmlShellByLayout(layout: string, appHtml: string, state: object, title?: string, metas?: Meta[]) {
+  return layout
+    .replace(/\<title\>(.*?)\<\/title\>/, (_, dTitle) => `<title>${title || dTitle}</title>`)
+    .replace(/\<\!\-\-(app|html|app-html)\-\-\>/i, appHtml)
+    .replace(/\<\!\-\-(state|scripts)\-\-\>/, `<script>window.__STATE__=${JSON.stringify(state).replace(/<|>/g, '')}</script>`)
+    .replace(/\<\!\-\-metas?\-\-\>/, getMetas(metas))
+}
+
+function getDefaultHtmlShellFn() {
+  const HTMLShellFn = (appHtml: string, state: object, title?: string, metas?: Meta[]) => `
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.2/css/bulma.min.css">
+        <title>${title}</title>
+        ${getMetas(metas)}
+    </head>
+    <body>
+        <div id="app">${appHtml}</div>
+        <script>window.__STATE__=${JSON.stringify(state).replace(/<|>/g, '')}</script>
+        <script src="./app.js"></script>
+    </body>
+</html>
+`
+  return HTMLShellFn;
+}
+
+function getMetas(metas?: Meta[]): string {
+  return metas?.map(m => `<meta name="${m.name}" content="${m.content}" />`).join('') ?? '';
+}
+
+
+
+
 
 function copyFiles(from: string, to: string) {
   if (existsSync(from)) ensureDirSync(to);

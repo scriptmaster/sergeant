@@ -1,0 +1,20 @@
+
+header {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(0deg, rgba(0,0,0,0.1), transparent);
+    border-bottom: 1px solid #ccc;
+}
+
+nav {
+    display: flex;
+}
+
+nav a {
+    display: block;
+    background-color: rgba(0,0,0,0.1);
+    padding: 8px 16px;
+    border-radius: 4px;
+    margin-inline-start: 12px;
+}

@@ -4,9 +4,9 @@ export function NavBar() {
   return (
     <header>
       <nav>
-        <Link to="/">Home</Link>
+        {/* <Link to="/">Home</Link>
         <Link to="/getting-started">Getting Started</Link>
-        <Link to="/users/lambtron">Dynamic Routes</Link>
+        <Link to="/users/lambtron">Dynamic Routes</Link> */}
       </nav>
     </header>
   );

@@ -1,0 +1,12 @@
+{
+    "imports": {
+        "preact": "https://esm.sh/preact@10.17.1?dts",
+        "preact-router": "https://esm.sh/preact-router@4.1.2",
+        "preact-render-to-string/jsx": "https://esm.sh/preact-render-to-string@6.2.1/jsx"
+    },
+    "compilerOptions": {
+        "jsx": "react-jsx",
+        "jsxFactory": "h",
+        "jsxFragmentFactory": "Fragment"
+    }
+}

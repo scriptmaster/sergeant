@@ -6,9 +6,9 @@ export function Footer() {
       <hr />
       <p>
         This app is part of a larger set of{" "}
-        <Link to="https://github.com/denoland/examples">
+        {/* <Link to="https://github.com/denoland/examples">
           sample starter apps
-        </Link>{" "}
+        </Link>{" "} */}
         that can help you get started with Deno and Deno Deploy.
       </p>
       <ul>

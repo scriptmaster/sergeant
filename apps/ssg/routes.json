@@ -1,0 +1,13 @@
+{
+    "file": "static.tsx",
+    "layout": "pages/static-shell.html",
+    "routes": [
+        {
+            "path": "/",
+            "title": "Home Sweet Home",
+            "data": [],
+            "layout": "layouts/base.html"
+        },
+        { "path": "/about" }
+    ]
+}

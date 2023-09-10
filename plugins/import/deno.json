@@ -1,0 +1,16 @@
+{
+	"compilerOptions": {
+		"jsxFactory": "t"
+	},
+
+	"fmt": {
+		"options": {
+			"proseWrap": "preserve",
+			"singleQuote": true,
+			"useTabs": true
+		}
+	},
+
+	"importMap": "./import-map.json",
+	"lock": false
+}

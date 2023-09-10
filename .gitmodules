@@ -1,0 +1,6 @@
+[submodule "plugins/esbuild_deno_loader"]
+	path = plugins/esbuild_deno_loader
+	url = https://github.com/scriptmaster/esbuild_deno_loader
+[submodule "plugins/import"]
+	path = plugins/import
+	url = https://github.com/scriptmaster/import

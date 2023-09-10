@@ -1,0 +1,12 @@
+@import "more.scss";
+
+ul {
+    li {
+        margin-block-start: 12px;
+
+        a {
+            display: inline-block;
+            padding: 0 12px;
+        }
+    }
+}
