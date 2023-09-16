@@ -42,9 +42,9 @@ Compare this with 200MB-400MB node_modules for a react hello world project.
 
 Building enabled apps:
 Building: apps/app2
-apps/app2/dist/app-esbuild.esm.js 160 KB 
+apps/app2/dist/app-esbuild.main.js 160 KB 
 Building: apps/app1
-apps/app1/dist/app-esbuild.esm.js 10 KB 
+apps/app1/dist/app-esbuild.main.js 10 KB 
 Done
 ```
 

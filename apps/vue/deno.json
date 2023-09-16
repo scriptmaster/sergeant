@@ -1,0 +1,8 @@
+{
+    "imports": {
+        "vue": "https://esm.sh/vue@3.3.4"
+    },
+    "compilerOptions": {
+        "jsx": "react-jsx"
+    }
+}

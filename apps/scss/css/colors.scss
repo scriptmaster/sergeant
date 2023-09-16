@@ -1,0 +1,90 @@
+
+@mixin color_var($prop, $fg, $bg) {
+  #{'--fg-' + $prop}: $fg;
+  #{'--bg-' + $prop}: $bg;
+}
+
+@mixin color_cls($prop) {
+  #{'.color-fg-' + $prop} {
+    color: var(#{'--fg-' + $prop});
+  }
+
+  #{'.color-bg-' + $prop} {
+    background-color: var(#{'--bg-' + $prop});
+  }
+}
+
+@mixin color1($colors) {
+  :root {
+    @each $prop, $v in $colors {
+      @include color_var($prop, $v, $v)
+    }
+  }
+  @each $prop, $v in $colors {
+    @include color_cls($prop)
+  }
+}
+
+@mixin color2($colors) {
+  :root {
+    @each $prop, $v in $colors {
+      @include color_var($prop, nth($v, 1), nth($v, 2))
+    }
+  }
+  @each $prop, $v in $colors {
+    @include color_cls($prop)
+  }
+}
+
+@include color2((
+  default: rgb(31 35 40) #fff,
+  emphasis: rgb(255, 255, 255) rgb(36, 41, 47),
+
+  accent: rgb(9, 105, 218) #fff,
+
+  footer: #eee #333,
+));
+
+// https://primer.style/design/foundations/css-utilities/colors
+
+@include color1((
+  muted: rgb(101, 109, 118),
+  subtle: rgb(110, 119, 129),
+
+  success: rgb(26, 127, 55),
+  attention: rgb(154, 103, 0),
+  severe: rgb(188, 76, 0),
+  danger: rgb(209, 36, 47),
+  open: rgb(26, 127, 55),
+  closed: rgb(209, 36, 47),
+  done: rgb(130, 80, 223),
+  sponsors: rgb(191, 57, 137),
+  overlay: rgb(255, 255, 255),
+  inset: rgb(246, 248, 250),
+  transparent: rgba(0, 0, 0, 0),
+));
+
+.dark {
+    --fg-default: rgb(31 35 40);
+    --fg-muted: rgb(101, 109, 118);
+    --fg-subtle: rgb(110, 119, 129);
+
+    --fg-accent: rgb(9, 105, 218);
+    --fg-success: rgb(26, 127, 55);
+    --fg-attention: rgb(154, 103, 0);
+    --fg-severe: rgb(188, 76, 0);
+    --fg-danger: rgb(209, 36, 47);
+    --fg-open: rgb(26, 127, 55);
+    --fg-closed: rgb(209, 36, 47);
+    --fg-done: rgb(130, 80, 223);
+    --fg-sponsors: rgb(191, 57, 137);
+
+    --fg-emphasis: rgb(255, 255, 255);
+    --bg-emphasis: rgb(9, 105, 218);
+
+    --bg-default: rgb(255, 255, 255);
+    --bg-overlay: rgb(255, 255, 255);
+    --bg-inset: rgb(246, 248, 250);
+}
+
+.color-fg-inherit { color: inherit !important; }

@@ -1,3 +1,4 @@
+import { existsSync } from "https://deno.land/std@0.83.0/fs/exists.ts";
 import { esbuild, join, dirname, sass } from "../deps.ts";
 import { NativeLoader } from "./loader_native.ts";
 import { PortableLoader } from "./loader_portable.ts";
@@ -308,18 +309,35 @@ export function denoLoaderPlugin(
             return { loader: 'css', contents: css.toString() }
           }
           return { loader: 'css', contents };
+        } else if (args.namespace=='file' && /(\.(vue|vuex))$/.test(args.path)) {
+          debug('vue:', args.path);
+          const contents = await vue(args.path);
+          // const contents = await Deno.readTextFile(args.path);
+          return { loader: 'tsx', contents };
         } else if (args.namespace=='file' && !/(\.(tsx|ts|jsx|js))$/.test(args.path)) {
-          if (Deno.env.get('LOG')=='DEBUG') console.log('File Loader::', args.path);
-          const contents = await Deno.readTextFile(args.path);
-          return { loader: 'file', contents };
+          if (Deno.env.get('LOG')=='DEBUG') console.log('CHECK FILE::', args.path);
+          if(existsSync(args.path)) {
+            if (Deno.env.get('LOG')=='DEBUG') console.log('FILE EXISTS::', args.path);
+            const contents = await Deno.readTextFile(args.path);
+            console.log('Contents: ', contents);
+ 
+            return { loader: 'file', contents };
+          } else {
+            if (Deno.env.get('LOG')=='DEBUG') console.log('FILE NOT EXISTS::', args.path);
+            if (existsSync(args.path + '.ts')) {
+              args.path += '.ts';
+            } else if (existsSync(args.path + '.tsx')) {
+              args.path += '.tsx';
+            } else if (existsSync(args.path + '.js')) {
+              args.path += '.js';
+            } else if (existsSync(args.path + '.jsx')) {
+              args.path += '.jsx';
+            }
+          }
         }
 
-        // console.log('TS Loader', args.path);
-        // const contents = await Deno.readTextFile(args.path);
-        // return { loader: 'tsx', contents };
-
         const specifier = esbuildResolutionToURL(args);
-        if (Deno.env.get('LOG')=='DEBUG') console.log('SPECIFIER:', specifier.href);
+        if (Deno.env.get('LOG') == 'DEBUG') console.log('SPECIFIER:', specifier.href);
         return loaderImpl.loadEsm(specifier);
       }
       // TODO(lucacasonato): once https://github.com/evanw/esbuild/pull/2968 is fixed, remove the catch all "file" handler
@@ -330,3 +348,28 @@ export function denoLoaderPlugin(
     },
   };
 }
+
+//@ts-ignore args can be any given to console
+function debug(...a: any[]) {
+  if (Deno.env.get('LOG')=='DEBUG') console.log.apply(console, a);
+}
+
+let vue_loader: (path: string) => string | Promise<string>;
+async function vue(path: string) {
+  if (!vue_loader) {
+    const { loader } = await import('../../vue_loader/mod.ts');
+    vue_loader = loader;
+  }
+
+  let contents = '';
+
+  const restoreCwd = Deno.cwd();
+  Deno.chdir(join(dirname(path)));
+
+  contents = await vue_loader(path);
+
+  Deno.chdir(restoreCwd);
+  
+  return contents;
+}
+

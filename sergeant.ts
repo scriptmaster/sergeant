@@ -5,6 +5,7 @@ import {
   dirname,
   extname,
   join,
+  basename
 } from "https://deno.land/std@0.200.0/path/mod.ts";
 import { existsSync } from "https://deno.land/std@0.200.0/fs/mod.ts";
 import {
@@ -117,23 +118,23 @@ async function buildApp(appName: string) {
     return;
   }
 
-  // const outfile = join(dist(appName), 'app-esbuild.esm.js');
   const outdir = dist(appName);
   const outfile = join(dist(appName), entryFile.replace(/\.ts[x]?$/, ".js"));
   const outfile2 = join(dist(appName), entryFile.replace(/\.ts[x]?$/, ".css"));
 
   console.log(bgRgb8(rgb8("Building:", 0), 6), appName);
 
-  // const restoreCwd = join(Deno.cwd(), "./");
+  const denoJson = Deno.env.get('DENO_JSON') ?? "deno.json";
+  //const restoreCwd = join(Deno.cwd(), "./");
   //Deno.chdir(dir);
   const denoPluginOpts: { configPath?: string } = {};
-  const denoJsonFile = join(appDir, "deno.json");
+  const denoJsonFile = join(appDir, denoJson);
 
   // console.log('denoJsonFile: ', denoJsonFile);
   if (existsSync(denoJsonFile)) {
     denoPluginOpts.configPath = denoJsonFile;
-  } else if (existsSync(join(cwd, "deno.json"))) {
-    denoPluginOpts.configPath = join(cwd, "deno.json");
+  } else if (existsSync(join(cwd, denoJson))) {
+    denoPluginOpts.configPath = join(cwd, denoJson);
   }
 
   const entryPoints = [];
@@ -190,8 +191,6 @@ async function buildApp(appName: string) {
   const publicDir = join(appDir, "public");
   if (existsSync(publicDir)) copyFiles(publicDir, dist(appName));
 
-  // Deno.chdir(restoreCwd);
-
   const printOutSize = (file = "") => {
     if (!existsSync(file)) return;
 
@@ -207,9 +206,15 @@ async function buildApp(appName: string) {
   printOutSize(outfile);
   printOutSize(outfile2);
 
-
   try {
-    return await staticRender(appName, esopts);
+    const result = await staticRender(appName, esopts);
+    if (result) {
+      const staticDir = join(dist(appName), 'static');
+      const copyStaticFile = (file: string) => { if (existsSync(file)) Deno.copyFileSync(file, join(staticDir, basename(file))); }
+
+      copyStaticFile(outfile)
+      copyStaticFile(outfile2)
+    }
   } catch(e) {
     console.error(e);
   }

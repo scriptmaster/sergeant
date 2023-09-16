@@ -1,0 +1,27 @@
+{
+    "imports": {
+        "react": "https://esm.sh/preact@10.17.1/compat?dts",
+        "react-dom": "https://esm.sh/preact@10.17.1/compat?dts",
+        "react-redux3": "https://esm.sh/v132/react-redux@8.1.2/es2021/react-redux.mjs",
+        "react-redux4": "https://unpkg.com/react-redux@8.0.7/dist/react-redux.js",
+
+        "react-is": "https://unpkg.com/react-is",
+        "use-sync-external-store/with-selector": "https://unpkg.com/use-sync-external-store/with-selector",
+        "react-redux": "https://unpkg.com/react-redux@9.0.0-alpha.1/dist/react-redux.browser.mjs",
+
+        "react-redux5": "./react-redux.js",
+        "react-redux2": "https://esm.sh/react-redux",
+
+        "@reduxjs/toolkit": "https://esm.sh/@reduxjs/toolkit",
+
+        "preact-router": "https://esm.sh/preact-router@4.1.2",
+        "preact-render-to-string/jsx": "https://esm.sh/preact-render-to-string@6.2.1/jsx",
+
+        "preact-redux": "https://esm.sh/preact-redux@2.1.0",
+
+        "@primer/": "https://esm.sh/primer/css/"
+    },
+    "compilerOptions": {
+        "jsx": "react-jsx"
+    }
+}

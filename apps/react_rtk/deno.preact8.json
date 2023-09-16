@@ -1,0 +1,19 @@
+{
+    "imports": {
+        "react": "https://esm.sh/preact@8.5.3?dts",
+        "react-dom": "https://esm.sh/preact@8/compat?dts",
+
+        "react-redux": "https://esm.sh/preact-redux",
+
+        "preact-redux": "https://esm.sh/preact-redux@2.1.0",
+
+        "@reduxjs/toolkit": "https://esm.sh/@reduxjs/toolkit",
+
+        "preact-router": "https://esm.sh/preact-router@4.1.2",
+        "preact-render-to-string/jsx": "https://esm.sh/preact-render-to-string@6.2.1/jsx",
+        "@primer/": "https://esm.sh/primer/css/"
+    },
+    "compilerOptions": {
+        "jsx": "react-jsx"
+    }
+}

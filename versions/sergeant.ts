@@ -94,7 +94,7 @@ async function buildApp(dir: string) {
     // console.log('main.tsx not found in this dir', dir);
   }
 
-  const outfile = join(dir, './dist/app-esbuild.esm.js');
+  const outfile = join(dir, './dist/main.js');
 
   console.log(bgRgb8(rgb8('Building:', 0), 6), dir);
 

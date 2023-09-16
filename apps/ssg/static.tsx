@@ -16,9 +16,8 @@ interface RenderRoute {
     output?: string;
 }
 
-// https://www.digitalocean.com/community/tutorials/build-a-ssr-app-with-preact-unistore-and-preact-router
-export function StaticApp() {
-    return <Router>
+export function StaticApp(props: {url:string}) {
+    return <Router url={props.url}>
         <Home path="/" />
         <About path="/about" />
         <Search path="/search/:query/:advanced?" />
@@ -27,11 +26,7 @@ export function StaticApp() {
 
 export function renderRoutes(routes: RenderRoute[] = []): RenderRoute[] {
     routes = routes.map(r => {
-        r.output = render(<StaticApp />, {
-            path: '/about',
-            location: '/about',
-        }, { pretty: true })
-
+        r.output = render(<StaticApp url={r.path} />, {}, { pretty: true })
         return r;
     });
 

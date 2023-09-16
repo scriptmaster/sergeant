@@ -100,7 +100,7 @@ async function buildApp(dir: string) {
   }
 
   const distDir = join(dir, 'dist');
-  const outfile = join(distDir, 'app-esbuild.esm.js');
+  const outfile = join(distDir, 'main.js');
 
   console.log(bgRgb8(rgb8('Building:', 0), 6), dir);
 

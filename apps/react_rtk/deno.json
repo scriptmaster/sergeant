@@ -1,0 +1,18 @@
+{
+    "imports": {
+        "react": "https://esm.sh/react?prod",
+        "react-dom": "https://esm.sh/react-dom?prod",
+        "react-redux": "../../vendor/github.com/react-redux/src/index.ts",
+        "@reduxjs/toolkit": "https://esm.sh/@reduxjs/toolkit",
+
+        "use-sync-external-store/shim": "https://esm.sh/use-sync-external-store/shim",
+        "use-sync-external-store/shim/with-selector": "https://esm.sh/use-sync-external-store/shim/with-selector",
+        "hoist-non-react-statics": "https://esm.sh/hoist-non-react-statics",
+        "react-is": "https://esm.sh/react-is",
+
+        "react-redux2": "https://esm.sh/react-redux"
+    },
+    "compilerOptions": {
+        "jsx": "react-jsx"
+    }
+}

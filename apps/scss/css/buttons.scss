@@ -1,0 +1,38 @@
+:root {
+    --color-btn-border: #4444;
+}
+
+button, .btn, [type=button], [type=submit], [type=reset] {
+    position: relative;
+    display: inline-block;
+    padding: 5px 16px;
+    font-size: 14px;
+    font-weight: var(--base-text-weight-medium, 500);
+    line-height: 20px;
+    white-space: nowrap;
+    vertical-align: middle;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid;
+    border-radius: 6px;
+    appearance: none;
+
+
+    color: var(--button-default-fgColor-rest, var(--color-btn-text));
+    background-color: var(--button-default-bgColor-rest, var(--color-btn-bg));
+    border-color: var(--button-default-borderColor-rest, var(--color-btn-border));
+    box-shadow: var(--button-default-shadow-resting, var(--color-btn-shadow)),var(--button-default-shadow-inset, var(--color-btn-inset-shadow));
+    transition: 80ms cubic-bezier(0.33, 1, 0.68, 1);
+    transition-property: color,background-color,box-shadow,border-color;
+
+    &:hover {
+        background-color: rgba(0,0,0, 0.05);
+        box-shadow: 2px #2222;
+    }
+
+    &:active {
+        background-color: rgba(0,0,0, 0.08);
+        box-shadow: 2px #ccc, 2px #fff;
+    }
+
+}

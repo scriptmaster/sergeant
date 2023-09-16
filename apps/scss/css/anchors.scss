@@ -1,0 +1,14 @@
+a, a:visited {
+    color: #333;
+}
+
+a:hover { text-decoration: none; }
+
+li > a {
+    display: inline-block;
+    padding: 0 var(--gap2);
+}
+
+.main.menu li > a:hover {
+    border-bottom: 1px solid var(--color-attention);
+}

@@ -1,6 +1,6 @@
 {
     "file": "static.tsx",
-    "layout": "pages/static-shell.html",
+    "layout": "layouts/static-shell.html",
     "routes": [
         {
             "path": "/",
