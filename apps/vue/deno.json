@@ -1,6 +1,8 @@
 {
     "imports": {
-        "vue": "https://esm.sh/vue@3.3.4"
+        "vue3.3.4": "https://esm.sh/vue@3.3.4",
+        "vue3": "https://esm.sh/@vue/runtime-core@3.3.4",
+        "vue": "https://unpkg.com/vue@3/dist/vue.runtime.esm-browser.prod.js"
     },
     "compilerOptions": {
         "jsx": "react-jsx"

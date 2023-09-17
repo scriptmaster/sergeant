@@ -2,6 +2,7 @@
     "imports": {
         "react": "https://esm.sh/react?prod",
         "react-dom": "https://esm.sh/react-dom?prod",
+
         "react-redux": "../../vendor/github.com/react-redux/src/index.ts",
         "@reduxjs/toolkit": "https://esm.sh/@reduxjs/toolkit",
 

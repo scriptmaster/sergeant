@@ -60,6 +60,8 @@ export interface DenoPluginsOptions {
    * loader always uses a local `node_modules` directory.
    */
   nodeModulesDir?: boolean;
+
+  context?: object;
 }
 
 export function denoPlugins(opts: DenoPluginsOptions = {}): esbuild.Plugin[] {

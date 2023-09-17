@@ -1,6 +1,8 @@
 import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
 //import { denoPlugins } from "https://esm.sh/gh/scriptmaster/esbuild_deno_loader@0.8.4/mod.ts";
 import { denoPlugins } from "./plugins/esbuild_deno_loader/mod.ts";
+import pluginVue from "https://esm.sh/esbuild-plugin-vue-next";
+
 import {
   dirname,
   extname,
@@ -109,6 +111,11 @@ async function serveApps(appName: string) {
   console.log(servers, brightGreen("servers started"));
 }
 
+interface DenoPluginOpts {
+  configPath?: string
+  context?: object
+};
+
 async function buildApp(appName: string) {
   const entryFile = "main.tsx";
   const appDir = app(appName);
@@ -127,7 +134,7 @@ async function buildApp(appName: string) {
   const denoJson = Deno.env.get('DENO_JSON') ?? "deno.json";
   //const restoreCwd = join(Deno.cwd(), "./");
   //Deno.chdir(dir);
-  const denoPluginOpts: { configPath?: string } = {};
+  const denoPluginOpts: DenoPluginOpts = { context: new Object };
   const denoJsonFile = join(appDir, denoJson);
 
   // console.log('denoJsonFile: ', denoJsonFile);
@@ -140,17 +147,19 @@ async function buildApp(appName: string) {
   const entryPoints = [];
   entryPoints.push(mainEntry);
 
-  const plugins = [...denoPlugins(denoPluginOpts)];
+  const p: esbuild.Plugin[] = [];
 
   const esopts = {
-    plugins,
+    plugins: p,
     entryPoints,
     outdir,
     bundle: true,
     platform: "node",
     format: "esm",
+    splitting: true,
+    //chunkNames: '[name]',
     treeShaking: true,
-    //define: { 'process.env.NODE_ENV': '"production"' },
+    define: { 'process.env.NODE_ENV': '"production"' },
     minify: !DEV_MODE,
     jsxFactory: "React.createElement",
     jsxFragment: "React.Fragment",
@@ -181,6 +190,9 @@ async function buildApp(appName: string) {
     }
   }
 
+  const plugins = getPlugins(denoPluginOpts);
+  esopts.plugins = plugins;
+
   let result = { errors: [] };
   try {
     result = await esbuild.build(esopts);
@@ -207,7 +219,7 @@ async function buildApp(appName: string) {
   printOutSize(outfile2);
 
   try {
-    const result = await staticRender(appName, esopts);
+    const result = await staticRender(appName, esopts, denoPluginOpts);
     if (result) {
       const staticDir = join(dist(appName), 'static');
       const copyStaticFile = (file: string) => { if (existsSync(file)) Deno.copyFileSync(file, join(staticDir, basename(file))); }
@@ -218,6 +230,13 @@ async function buildApp(appName: string) {
   } catch(e) {
     console.error(e);
   }
+}
+
+function getPlugins(denoPluginOpts: DenoPluginOpts): esbuild.Plugin[] {
+  return [
+    pluginVue({ templateOptions: 'compiler' }),
+    ...denoPlugins(denoPluginOpts), 
+  ];
 }
 
 
@@ -239,7 +258,7 @@ type Meta = {name: string, content: string};
 
 
 //@ts-ignore ignore esopts
-async function staticRender(appName: string, esopts: any) {
+async function staticRender(appName: string, esopts: any, denoPluginOpts: DenoPluginOpts) {
   const appDir = app(appName);
   const distDir = dist(appName);
   const routesFile = join(appDir, "routes.json");
@@ -255,13 +274,22 @@ async function staticRender(appName: string, esopts: any) {
     return console.log(`Missing "file": "${staticFile}" from `, routesFile);
   }
 
+  const denoPluginOptsStatic: DenoPluginOpts = {
+    configPath: denoPluginOpts.configPath,
+    context: new Object
+  };
+
   const staticOpts = Object.assign({}, esopts, {
+    plugins: getPlugins(denoPluginOptsStatic),
     entryPoints: [staticRenderFile],
     write: false,
-    minify: false,
+    minify: false, // minification is not required
     format: 'esm',
     platform: 'neutral',
     keepNames: true,
+    define: {
+      __VUE_OPTIONS_API__: 'true',
+    }
   });
 
   let result: {
@@ -275,7 +303,10 @@ async function staticRender(appName: string, esopts: any) {
   }
 
   if (result && result.outputFiles && result.outputFiles[0] && result.outputFiles[0].text) {
+    // the entire bundle is available here:
     const text = result.outputFiles[0].text;
+
+    //console.log(text);
 
     try {
       const ssg = await importString(text);
@@ -290,7 +321,7 @@ async function staticRender(appName: string, esopts: any) {
         ensureDirSync(staticDir);
         console.log(brightGreen('SSG: ' + staticDir));
 
-        renderOutput(staticDir, routesJson.routes, routeFn, shellFn, appDir);
+        await renderOutput(staticDir, routesJson.routes, routeFn, shellFn, appDir);
       }
     } catch(e) {
       console.log(e);
@@ -304,12 +335,12 @@ type ReturningArrayFunc<T> = (o: T[]) => T[]
 type RouteFn = ReturningArrayFunc<RenderRoute>;
 type ShellFn = (appHtml: string, ...o2: object[]) => ''
 
-function renderOutput(distDir: string, routes: RenderRoute[], routeFn: RouteFn, shellFn: ShellFn | string, appDir: string): void {
-  const outputs = routeFn(routes || []);
+async function renderOutput(distDir: string, routes: RenderRoute[], routeFn: RouteFn, shellFn: ShellFn | string, appDir: string): void {
+  const outputs = await routeFn(routes || []);
   if (outputs) {
-    outputs.map((o: RenderRoute) => {
+    outputs.map(async (o: RenderRoute) => {
       if (o.routes) {
-        return renderOutput(distDir, o.routes, routeFn, shellFn, appDir);
+        return await renderOutput(distDir, o.routes, routeFn, shellFn, appDir);
       }
       const file = join(o.path, 'index.html');
       console.log("Writing: ", o.path, '=>', file);

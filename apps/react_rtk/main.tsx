@@ -9,9 +9,7 @@ import App from './App.tsx';
 import "../scss/main.scss";
 
 ReactDOM.render(
-<Provider store={store}>
     <App />
-</Provider>
 , document.getElementsByTagName('main')[0]);
 
 ReactDOM.render(

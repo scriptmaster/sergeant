@@ -1,4 +1,6 @@
-import { h, Component, render } from 'preact';
+import { render } from 'preact';
+import React from 'react';
+
 import App from './App.tsx';
 import "../scss/main.scss";
 

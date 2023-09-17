@@ -68,6 +68,8 @@ export interface DenoLoaderPluginOptions {
    * loader always uses a local `node_modules` directory.
    */
   nodeModulesDir?: boolean;
+
+  context?: object;
 }
 
 const LOADERS = ["native", "portable"] as const;
@@ -309,17 +311,19 @@ export function denoLoaderPlugin(
             return { loader: 'css', contents: css.toString() }
           }
           return { loader: 'css', contents };
-        } else if (args.namespace=='file' && /(\.(vue|vuex))$/.test(args.path)) {
-          debug('vue:', args.path);
-          const contents = await vue(args.path);
-          // const contents = await Deno.readTextFile(args.path);
-          return { loader: 'tsx', contents };
+        // } else if (args.namespace=='file' && /(\.(vue|vuex))$/.test(args.path)) {
+        //   debug('vue:', args.path);
+
+        //   const loader = new VueLoader(options.context as CompilerContext);
+        //   const contents = await loader.vue(args.path);
+
+        //   return { loader: 'tsx', contents };
         } else if (args.namespace=='file' && !/(\.(tsx|ts|jsx|js))$/.test(args.path)) {
           if (Deno.env.get('LOG')=='DEBUG') console.log('CHECK FILE::', args.path);
           if(existsSync(args.path)) {
             if (Deno.env.get('LOG')=='DEBUG') console.log('FILE EXISTS::', args.path);
             const contents = await Deno.readTextFile(args.path);
-            console.log('Contents: ', contents);
+            // console.log('plugin_deno_loader::File Contents: ', contents);
  
             return { loader: 'file', contents };
           } else {
@@ -354,22 +358,50 @@ function debug(...a: any[]) {
   if (Deno.env.get('LOG')=='DEBUG') console.log.apply(console, a);
 }
 
-let vue_loader: (path: string) => string | Promise<string>;
-async function vue(path: string) {
-  if (!vue_loader) {
-    const { loader } = await import('../../vue_loader/mod.ts');
-    vue_loader = loader;
+type vueLoaderFn = (path: string) => string | Promise<string>;
+
+
+
+class VueLoader {
+  context?: VueCompilerContext;
+
+  constructor(context: VueCompilerContext) {
+    this.context = context;
   }
 
-  let contents = '';
+  async vue(path: string) {
+    if(!this.context) {
+      throw new Error('vue(path, ctx), ctx is required: {}');
+    }
 
-  const restoreCwd = Deno.cwd();
-  Deno.chdir(join(dirname(path)));
+    console.log('vue compiler: path:', path);
 
-  contents = await vue_loader(path);
+    if (!this.context.vueCompiler) {
+      this.context.vueCompiler = (path: string) => path;
 
-  Deno.chdir(restoreCwd);
-  
-  return contents;
+      const { Loader } = await import('../../vue_loader/mod.ts');
+      const loader = new Loader();
+      this.context.vueCompiler = loader.vueCompiler.bind(loader);
+    }
+
+    let contents = '';
+
+    const restoreCwd = Deno.cwd();
+    Deno.chdir(join(dirname(path)));
+
+    console.log('vue compiler: path2:', path);
+    contents = await this.context.vueCompiler(path);
+
+    Deno.chdir(restoreCwd);
+    
+    return contents;
+  }
+
 }
+
+export interface VueCompilerContext {
+  vueCompiler?: vueLoaderFn
+}
+
+export type CompilerContext = VueCompilerContext | object;
 
