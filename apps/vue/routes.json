@@ -1,4 +1,5 @@
 {
+    "disabled": true,
     "file": "static.tsx",
     "layout": "layouts/static-shell.html",
     "routes": [

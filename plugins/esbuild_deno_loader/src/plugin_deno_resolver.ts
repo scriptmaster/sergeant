@@ -1,3 +1,4 @@
+import { yellow, green, red } from "https://deno.land/std@0.140.0/fmt/colors.ts";
 import {
   esbuild,
   ImportMap,
@@ -9,6 +10,7 @@ import {
   join,
 } from "../deps.ts";
 import { readDenoConfig, urlToEsbuildResolution } from "./shared.ts";
+import { existsSync } from "https://deno.land/std@0.83.0/fs/exists.ts";
 
 export type { ImportMap, Scopes, SpecifierMap };
 
@@ -136,11 +138,45 @@ export function denoResolverPlugin(
         // an import map is specified, we use that to resolve the specifier.
         let resolved: URL;
         if (importMap !== null) {
+
+          if (referrer.protocol == 'file:' && !existsSync(args.path) && importMap.imports && !importMap.imports[args.path]) {
+            //console.log('resolving', args.path, 'specifier:', referrer.protocol);
+
+            let localPath = '';
+
+            if (args.path[0] == '/') {
+              const localResolution = ['', './', 'src/', 'vendor/', 'node_modules/'];
+              for (const lr in localResolution) {
+                if (existsSync(join(lr + args.path))) {
+                  localPath = join(lr + args.path);
+                  break;
+                }
+              }
+            }
+
+            if (!localPath) {
+              const defaultCdn = 'https://esm.sh';
+              const getCdnUrl = (importMap: ImportMap) => (importMap?.imports? importMap?.imports['cdnurl'] ?? defaultCdn: defaultCdn);
+              const mappedUrl = getCdnUrl(importMap) + (args.path[0] == '/'? '': '/') + args.path;
+  
+              importMap.imports[args.path] = mappedUrl;
+  
+              Deno.writeTextFileSync("deno.imports.lock.json", JSON.stringify({
+                "imports": importMap.imports
+              }, null, 2));
+  
+              console.log(green('mapped:'), yellow(args.path), '=', green(mappedUrl));
+            } else {
+              console.log(red('bare file: specifier unresolved'), args.path, args, referrer);
+            }
+          }
+
           const res = resolveModuleSpecifier(
             args.path,
             importMap,
             new URL(referrer),
           );
+          // console.log(green('resolved'), args.path);
           resolved = new URL(res);
         } else {
           resolved = new URL(args.path, referrer);

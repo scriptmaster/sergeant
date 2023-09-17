@@ -263,10 +263,14 @@ async function staticRender(appName: string, esopts: any, denoPluginOpts: DenoPl
   const distDir = dist(appName);
   const routesFile = join(appDir, "routes.json");
   if(!existsSync(routesFile)) {
-    return console.log("No routes file:", routesFile);
+    return console.log(yellow("[Static Gen] No routes file:"), routesFile);
   }
   const routesJson = JSON.parse(Deno.readTextFileSync(routesFile));
   // console.log(routes);
+
+  if (routesJson.disabled === true) {
+    return console.log(yellow('Static Generation disabled:'), routesFile);
+  }
 
   const staticFile = routesJson.file ?? "static.tsx";
   const staticRenderFile = join(appDir, staticFile);
