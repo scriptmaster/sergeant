@@ -117,11 +117,18 @@ interface DenoPluginOpts {
 };
 
 async function buildApp(appName: string) {
-  const entryFile = "main.tsx";
   const appDir = app(appName);
-  const mainEntry = join(appDir, entryFile);
-  if (!existsSync(mainEntry)) {
-    console.error("main.tsx not found in this dir", appDir);
+
+  let entryFile = "main";
+  let mainEntry = join(appDir, entryFile);
+  if (existsSync(join(appDir, entryFile) + '.ts')) {
+    entryFile += '.ts';
+    mainEntry += '.ts';
+  } else if (existsSync(join(appDir, entryFile) + '.tsx')) {
+    entryFile += '.ts';
+    mainEntry += '.tsx';
+  } else {
+    console.error("main entry not found in this dir", appDir);
     return;
   }
 

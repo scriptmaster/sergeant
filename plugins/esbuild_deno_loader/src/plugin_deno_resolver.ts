@@ -8,6 +8,7 @@ import {
   SpecifierMap,
   toFileUrl,
   join,
+  dirname
 } from "../deps.ts";
 import { readDenoConfig, urlToEsbuildResolution } from "./shared.ts";
 import { existsSync } from "https://deno.land/std@0.83.0/fs/exists.ts";
@@ -139,22 +140,31 @@ export function denoResolverPlugin(
         let resolved: URL;
         if (importMap !== null) {
 
-          if (referrer.protocol == 'file:' && !existsSync(args.path) && importMap.imports && !importMap.imports[args.path]) {
-            //console.log('resolving', args.path, 'specifier:', referrer.protocol);
+          if (referrer.protocol == 'file:' && !(/https?\:/.test(args.path)) && !/[\/\.]/.test(args.path[0]) &&
+                  !existsSync(args.path) && importMap.imports && !importMap.imports[args.path]) {
+            console.log('unmapped import', args.path, 'specifier:', referrer.protocol, referrer.pathname);
 
             let localPath = '';
 
-            if (args.path[0] == '/') {
-              const localResolution = ['', './', 'src/', 'vendor/', 'node_modules/'];
-              for (const lr in localResolution) {
-                if (existsSync(join(lr + args.path))) {
-                  localPath = join(lr + args.path);
-                  break;
-                }
+            //if (args.path[0] == '/' || args.path[0] == '.') {
+            const localResolution = ['./$1/index.js', './$1/mod.ts', 'src/$1/index.js', 'src/$1/mod.ts',
+              'vendor/$1/index.js', 'vendor/$1/mod.ts',
+              'node_modules/$1/index.js', 'node_modules/$1/index.cjs', 'node_modules/$1/index.mjs'];
+
+            const refdir = dirname(referrer.pathname);
+            for (const lr of localResolution) {
+              const lrp = join(refdir, lr.replace('$1', args.path));
+              //console.log(refdir, lr, args.path, lrp);
+              if (existsSync(lrp)) {
+                localPath = lrp;
+                console.log('resolved to localPath:', localPath);
+                break;
               }
             }
+            //}
 
             if (!localPath) {
+              // define in the imports: { "cdnurl": "https://cdn.skypack.dev/" }
               const defaultCdn = 'https://esm.sh';
               const getCdnUrl = (importMap: ImportMap) => (importMap?.imports? importMap?.imports['cdnurl'] ?? defaultCdn: defaultCdn);
               const mappedUrl = getCdnUrl(importMap) + (args.path[0] == '/'? '': '/') + args.path;
@@ -167,7 +177,8 @@ export function denoResolverPlugin(
   
               console.log(green('mapped:'), yellow(args.path), '=', green(mappedUrl));
             } else {
-              console.log(red('bare file: specifier unresolved'), args.path, args, referrer);
+              // console.log(red('bare file: specifier unresolved'), args.path, args, referrer);
+              console.log(green('checking:'), yellow(args.path));
             }
           }
 

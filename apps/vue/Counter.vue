@@ -2,7 +2,7 @@
 </script>
 
 <template>
-  Counter
+  Counter component
 </template>
 
 <style scoped>

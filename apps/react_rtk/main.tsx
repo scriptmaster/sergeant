@@ -8,19 +8,19 @@ import App from './App.tsx';
 //import "../../vendor/github.com/primer-css/src/core/index.scss"
 import "../scss/main.scss";
 
-ReactDOM.render(
-    <App />
-, document.getElementsByTagName('main')[0]);
+// ReactDOM.render(
+//     <App />
+// , document.getElementsByTagName('main')[0]);
 
-ReactDOM.render(
-    <App />
-, document.getElementsByTagName('main')[0]);
+// ReactDOM.render(
+//     <App />
+// , document.getElementsByTagName('main')[0]);
 
-// ReactDOM.render(<React.StrictMode>
-//     <Provider store={store}>
-//         <App />
-//     </Provider>
-// </React.StrictMode>, document.getElementById('#root'));
+ReactDOM.render(<React.StrictMode>
+    <Provider store={store}>
+        <App />
+    </Provider>
+</React.StrictMode>, document.getElementById('#root'));
 
 // const mount = document.createElement('div');
 // //const mount = document.createDocumentFragment();

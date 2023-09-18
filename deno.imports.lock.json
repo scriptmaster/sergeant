@@ -1,8 +1,14 @@
 {
   "imports": {
-    "vue3.3.4": "https://esm.sh/vue@3.3.4",
-    "vue3": "https://esm.sh/@vue/runtime-core@3.3.4",
-    "vue.": "https://unpkg.com/vue@3/dist/vue.runtime.esm-browser.prod.js",
-    "vue": "https://esm.sh/vue"
+    "use-sync-external-store/shim/with-selector": "https://esm.sh/use-sync-external-store/shim/with-selector",
+    "use-sync-external-store/shim": "https://esm.sh/use-sync-external-store/shim",
+    "hoist-non-react-statics": "https://esm.sh/hoist-non-react-statics",
+    "file://react-redux/": "file:///Users/msheriff/Projects/dev/deno/sergeant/vendor/github.com/react-redux/src/index.ts",
+    "@reduxjs/toolkit": "https://esm.sh/@reduxjs/toolkit",
+    "react-redux2": "https://esm.sh/react-redux",
+    "react-dom": "https://esm.sh/react-dom?prod",
+    "react-is": "https://esm.sh/react-is",
+    "react": "https://esm.sh/react?prod",
+    "react-redux": "https://esm.sh/react-redux"
   }
 }
