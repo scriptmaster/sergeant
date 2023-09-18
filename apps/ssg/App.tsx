@@ -1,10 +1,11 @@
-import { h } from 'preact';
+import React from "react";
+
 import { Counter } from './components/Counter.tsx';
 import { Clock } from './components/Clock.tsx';
 
 export default function App() {
     return <div>
-        <h1>App Comp!!</h1>
+        <h1>App Comp</h1>
         <Counter />
         <Clock />
     </div>;

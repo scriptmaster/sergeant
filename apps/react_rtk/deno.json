@@ -1,7 +1,7 @@
 {
     "imports": {
-        "react": "https://esm.sh/react?prod",
-        "react-dom": "https://esm.sh/react-dom?prod",
+        "react": "https://esm.sh/react@18?prod",
+        "react-dom": "https://esm.sh/react-dom@18?prod",
 
         "//react-redux": "../../vendor/github.com/react-redux/src/index.ts",
         "@reduxjs/toolkit": "https://esm.sh/@reduxjs/toolkit",
@@ -11,7 +11,7 @@
         "hoist-non-react-statics": "https://esm.sh/hoist-non-react-statics",
         "react-is": "https://esm.sh/react-is",
 
-        "react-redux2": "https://esm.sh/react-redux"
+        "react-redux": "https://esm.sh/react-redux"
     },
     "compilerOptions": {
         "jsx": "react-jsx"

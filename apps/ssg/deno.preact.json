@@ -3,11 +3,12 @@
         "preact": "https://esm.sh/preact@10.17.1?dts",
         "preact-router": "https://esm.sh/preact-router@4.1.2",
         "preact-render-to-string/jsx": "https://esm.sh/preact-render-to-string@6.2.1/jsx",
-        "react": "https://esm.sh/preact@10.17.1/compat?dts",
-        "inversify": "https://esm.sh/inversify"
+
+        "react": "https://esm.sh/preact@10.17.1/compat"
     },
     "compilerOptions": {
         "jsx": "react-jsx",
-        "protos": "protos"
+        "jsxFactory": "h",
+        "jsxFragmentFactory": "Fragment"
     }
 }

@@ -4,3 +4,5 @@ go/
 *.lock
 apps/.*
 .*.md
+versions
+archive
