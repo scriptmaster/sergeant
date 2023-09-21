@@ -131,5 +131,4 @@ entryPoints: [
 interface DenoPluginOpts {
     configPath?: string
     context?: object
-  };
-  
+};

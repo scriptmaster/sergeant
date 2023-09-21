@@ -1,1 +1,5 @@
 // @inject
+
+export default CarbonDataService {
+    
+}
