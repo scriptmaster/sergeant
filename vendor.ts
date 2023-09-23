@@ -21,6 +21,7 @@ var defaults = {
 */
 // import * as esbuild from 'https://esm.sh/esbuild' 
 import * as path from "https://deno.land/std@0.201.0/path/mod.ts";
+import * as fs from "https://deno.land/std@0.201.0/fs/mod.ts";
 import { existsSync, ensureDirSync } from "https://deno.land/std@0.200.0/fs/mod.ts";
 
 import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
@@ -29,57 +30,123 @@ import pluginVue from "https://esm.sh/esbuild-plugin-vue-next";
 
 import { brightGreen } from "https://deno.land/std@0.200.0/fmt/colors.ts";
 import { green, red, yellow } from "https://deno.land/std@0.140.0/fmt/colors.ts";
+import { join } from "https://deno.land/std@0.201.0/path/join.ts";
 
 const args = Deno.args;
+const packageName = args[0];
+const cwd = Deno.cwd();
 
-// console.log(args);
+const env = (key: string) => Deno.env.get(key);
+const outdir = '.vendor';
 
-if(!args[0]) {
-    console.log(red('Require file or package name. Usage: vendor react'));
-    Deno.exit();
+const cdnUrl = env('ESM_CDN') || env('CDN_URL') || env('ESM_CDN_URL') || 'https://esm.sh';
+const cdn = (name: string, version = '') => cdnUrl.replace('/\/$/', '') + '/' + name + (version? '@'+version: '');
+const latestVersions: Dict<string> = {};
+
+export interface Dict<T> { [Key: string]: T; }
+export interface PackageJson { name: string, type?: string, dependencies?: Dict<string>, devDependencies?: Dict<string>, exports?: Dict<string> }
+
+if(!packageName) {
+    let packageJson: PackageJson = { name: '' };
+    try {
+        if (existsSync( join(cwd, 'package.vendor.json') )) {
+            packageJson = JSON.parse( Deno.readTextFileSync( join(cwd, 'package.vendor.json') ) );
+        } else if (existsSync( join(cwd, 'package.json') )) {
+            packageJson = JSON.parse( Deno.readTextFileSync( join(cwd, 'package.json') ) );
+            const packageVendorJson = JSON.stringify(Object.assign({},{about: "package.vendor.json is same as package.json to vendor, except you can edit in this file and still keep track of package names in package.json"},
+                packageJson), null, 4);
+
+            Deno.writeTextFileSync(join(cwd, 'package.vendor.json'), packageVendorJson)
+        }
+    } catch(e) {
+        console.error('JSON parse package.json:', e);
+    }
+
+    // console.log(packageJson);
+    const deps = packageJson.dependencies || ({} as Dict<string>)
+    const devDeps = packageJson.devDependencies || ({} as Dict<string>)
+
+    for(const d in deps) {
+        if(d && deps[d]) {
+            await install(d, deps[d].replace(/^\D/, ''));
+        }
+    }
+
+    for(const d in devDeps) {
+        if(d && devDeps[d]) {
+            ///await install(d, devDeps[d].replace(/^\D/, ''));
+            await install(d, '');
+        }
+    }
+
+    // console.log(red('Require file or package name. Usage: vendor react'));
+    // Deno.exit();
+} else {
+    await install(packageName, 'latest', true);
 }
 
-const cwd = Deno.cwd();
-// const dirname = path.resolve(path.dirname(args[0])) || cwd;
+// const dirname = path.resolve(path.dirname(installName)) || cwd;
 // const outdir = path.join(cwd, 'vendor_modules');
 // const outdir = path.join(cwd, 'vendor/modules/');
 
-const env = (key: string) => Deno.env.get(key);
-const outdir = path.join(cwd, env('MODULES_DIR') || 'node_modules');
-
-const cdnUrl = env('ESM_CDN') || env('CDN_URL') || env('ESM_CDN_URL') || 'https://esm.sh';
-const cdn = (name: string) => cdnUrl.replace('/\/$/', '') + '/' + name;
-
-async function main() {
-    let isFile = false;
+async function install(packageName: string, version = '', checkFile = false) {
+    const isFile = checkFile && existsSync(path.join(cwd, packageName)) && /\.[cm]?[jt]sx?$/.test(packageName);
     let filePackageName = '';
-    if (existsSync(path.join(cwd, args[0])) && /\.[cm]?[jt]sx?$/.test(args[0])) {
-        isFile = true;
-        filePackageName = path.basename(cwd) + '-' + path.basename(args[0]); // keep the ext :)
+    if (isFile) {
+        filePackageName = path.basename(cwd) + '-' + path.basename(packageName); // keep the ext :)
 
-        console.log('name:', filePackageName);
+        console.log('file:', filePackageName);
         const pluginOpts = getDenoOpts(''); //
-        const entry = args[0];
+        const entry = packageName;
 
-        printOutSize(await build(entry, filePackageName, pluginOpts));
-        
-        createPackagejson(filePackageName);
+        try {
+            const output = await build(entry, filePackageName, version, pluginOpts);
+            printOutSize(output);
+        } catch(e) { console.error(e); }
+    
+        createPackageJson(filePackageName, version);
     } else {
-        const name = getInstallName();
+        const name = getInstallName(packageName);
+        const npmVersion = await getNpmVersion(name, version);
         const denoPluginOpts = getDenoOpts(name);
-        const entry = prepareInstallPackage(name);
+        const entry = prepareInstallPackage(name, npmVersion);
 
-        printOutSize(await build(entry, name, denoPluginOpts));
+        try {
+            const output = await build(entry, name, npmVersion, denoPluginOpts);
+            printOutSize(output);
+        } catch(e) { console.error(e); }
 
-        createPackagejson(name);
+        createPackageJson(name, version);
     }
+
+    try {
+        const modulesDir = env('MODULES_DIR') || 'node_modules';
+        if (modulesDir && !/\w+_modules$/.test(modulesDir)) {
+            return console.error('MODULES_DIR should have pattern <name>_modules');
+        } else {
+            console.log(brightGreen('Moving installed modules to:'), modulesDir);
+            const renameTo = path.join(cwd, modulesDir);
+
+            if (!existsSync(renameTo)) fs.ensureDir(renameTo);
+
+            for await (const dirEntry of Deno.readDir(outdir)) {
+                if (dirEntry.isDirectory) {
+                    const dirTo = join(renameTo, dirEntry.name)
+                    if (existsSync(dirTo)) {
+                        Deno.removeSync(dirTo, {recursive: true});
+                    }
+                    Deno.renameSync(join(outdir, dirEntry.name), dirTo);
+                }
+            }
+        }
+        Deno.removeSync(outdir, {recursive: true});
+    } catch(e) { console.log(e); }
+
 }
 
-function getInstallName() {
-    console.log('Installing to:', outdir);
-    const name = args[0];
-    console.log(green(cdn(name)));
-
+function getInstallName(packageName: string) {
+    const name = packageName;
+    console.log(`Installing ${packageName} to: ${outdir} from ${green(cdn(name))}`);
     return name;
 }
 
@@ -90,10 +157,10 @@ function getDenoOpts(name: string) {
 
     if (existsSync(denoJsonFile)) {
         denoPluginOpts.configPath = denoJsonFile;
-        console.log('deno.json: ', denoPluginOpts.configPath);
+        // console.log('deno.json: ', denoPluginOpts.configPath);
     } else if (existsSync(path.join(cwd, denoJson))) {
         denoPluginOpts.configPath = path.join(cwd, denoJson);
-        console.log('deno.json: ', denoPluginOpts.configPath);
+        // console.log('deno.json: ', denoPluginOpts.configPath);
     } else {
         denoPluginOpts.configPath = path.join(cwd, 'deno.json');
         Deno.writeTextFileSync(denoPluginOpts.configPath, '{}');
@@ -112,15 +179,32 @@ function getDenoOpts(name: string) {
     return denoPluginOpts;
 }
 
-function prepareInstallPackage(name: string) {
+function prepareInstallPackage(name: string, version: string) {
+    //console.log('prepare', name, version);
     ensureDirSync(path.join(outdir, `${name}`));
     const inFile = path.join(outdir, `${name}/export.js`);
-    Deno.writeTextFileSync(inFile, `export * from "${name}";`);
+    Deno.writeTextFileSync(inFile, `export * from "${cdn(name, version)}";`);
     return inFile;
 }
 
-async function build(entry: string, name: string, denoPluginOpts: DenoPluginOpts) {
-    const outfile = `${outdir}/${name}/index.js`;
+async function getNpmVersion(name: string, version: string) {
+    if(!version || version == 'latest') {
+        if (!latestVersions[name]) {
+            const npmResponse = (await (await fetch(`https://registry.npmjs.org/${name}`)).json());
+            // console.log(Object.keys(npmResponse));
+            latestVersions[name] = npmResponse.version || npmResponse['dist-tags']['latest'] || 'latest';
+        }
+        return latestVersions[name] || 'latest';
+    } else {
+        return version;
+    }
+}
+
+async function build(entry: string, name: string, version: string, denoPluginOpts: DenoPluginOpts) {
+    // version = await getNpmVersion(name, version);
+    // console.log('getLatestVersion:', version);
+    const outfile = `${outdir}/${name}/${version}.js`;
+    // console.log('outfile:', outfile);
 
     const result = await esbuild.build({
         entryPoints: [entry],
@@ -163,28 +247,28 @@ function printOutSize(file: string) {
     );
 };
 
-function createPackagejson(name: string) {
-    console.log(outdir);
-    const packageJson = {
-        name: name,
-        type: 'module',
-        exports: {
-            '.': './index.js'
+function createPackageJson(name: string, version: string) {
+    const packageJson: PackageJson = { name, type: 'module', exports: { '.': `./${version}.js`, [version]: `./${version}.js`} };
+    const packageJsonFile = `${outdir}/${name}/package.json`;
+    // console.log('packageJsonFile', packageJsonFile);
+    if (existsSync(packageJsonFile)) {
+        const packageJsonRead = JSON.parse(Deno.readTextFileSync(packageJsonFile));
+        console.log(packageJsonRead.exports);
+        for(const e in packageJsonRead.exports) {
+            //console.log('read.exports', e);
+            packageJson.exports = Object.assign(packageJsonRead.exports, packageJson.exports);
         }
-    };
+    }
     // loop through existing dirs and update exports
     // ...
     // // // // //
 
     // finally write
-    Deno.writeTextFileSync(`${outdir}/${name}/package.json`, JSON.stringify(packageJson, null, 4))
+    Deno.writeTextFileSync(packageJsonFile, JSON.stringify(packageJson, null, 4))
     return true;
 }
 
-await main();
-
 esbuild.stop();
-
 console.log(brightGreen("Done"));
 
 

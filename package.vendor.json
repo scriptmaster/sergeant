@@ -1,0 +1,24 @@
+{
+    "about": "package.vendor.json is same as package.json to vendor, except you can edit in this file and still keep track of package names in package.json",
+    "name": "sergeant",
+    "version": "1.0.0",
+    "description": "A lightweight micro-services producing deno-[p]react SSG-first SEO-friendly framework.",
+    "main": "index.js",
+    "dependencies": {
+        "react": "^18.1.0",
+        "react-dom": "^18.2.0"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+ssh://git@github.com/scriptmaster/sergeant.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/scriptmaster/sergeant/issues"
+    },
+    "homepage": "https://github.com/scriptmaster/sergeant#readme"
+}
