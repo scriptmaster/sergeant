@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A lightweight micro-services producing deno-[p]react SSG-first SEO-friendly framework.",
   "main": "index.js",
+  "type": "module",
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

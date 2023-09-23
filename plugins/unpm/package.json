@@ -1,0 +1,8 @@
+{
+    "name": "umpm",
+    "type": "module",
+    "main": "index.mjs",
+    "exports": {
+        ".": "./index.mjs"
+    }
+}

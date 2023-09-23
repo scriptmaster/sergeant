@@ -1,0 +1,10 @@
+dist/
+.vscode/
+go/
+*.lock
+apps/.*
+.*.md
+versions
+archive
+node_modules/
+

@@ -1,0 +1,14 @@
+{
+    "imports": {
+      "react": "https://unpkg.com/react@18.2.0/umd/react.production.min.js",
+      "react@18.2.0": "https://unpkg.com/react@18.2.0/umd/react.production.min.js",
+      "unpm": "https://cdn.jsdelivr.net/gh/scriptmaster/unpm@master/index.min.mjs"
+    },
+    "map": {
+      "react-dom": {
+        "cdn": ["https://esm.run/"],
+        "umd": ["umd"],
+        "production": [".production.min"]
+      }
+    }
+}

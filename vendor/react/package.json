@@ -1,0 +1,7 @@
+{
+    "name": "react",
+    "type": "module",
+    "exports": {
+        ".": "./index.js"
+    }
+}
