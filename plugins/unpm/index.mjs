@@ -32,13 +32,13 @@ async function fetchCdn(name, version = 'latest') {
     const imports = import_map.imports || {};
     const packageMap = import_map.map || {};
 
-    if (imports[name+'@'+version]) return fetchAndWrite(imports[name+'@'+version]);
+    if (imports[name+'@'+version]) return fetchAndWrite(imports[name+'@'+version], name, version);
     if (imports[name] && version != 'latest' && version.split('.').length < 3) { // not a semver
         const imp1 = Object.keys(imports).filter(i => i.indexOf('@') > -1 && i.split('@')[1].split('.')[0] == version);
         console.log('Matched version:', imp1);
-        if (imp1[0] && imports[imp1[0]]) return fetchAndWrite(imports[imp1[0]]);
+        if (imp1[0] && imports[imp1[0]]) return fetchAndWrite(imports[imp1[0]], name, version);
     }
-    else if (imports[name]) return fetchAndWrite(imports[name]);
+    else if (imports[name]) return fetchAndWrite(imports[name], name, version);
 
     const unpmGithubUrl = `https://raw.githubusercontent.com/scriptmaster/unpm/main/node_modules/@unpm/`;
     // `https://raw.githubusercontent.com/scriptmaster/unpm/main/node_modules/@unpm/${name}@{versionOrLatest}/${name}.min.js`;
@@ -54,7 +54,7 @@ async function fetchCdn(name, version = 'latest') {
         'https://esm.sh/': {},
     }
     // const mapper = (map1, map2, g1 = '', g2 = '') => map1.reduce((p, m1) => [...p, ...map2.map(m2 => `${m1}${g1}${m2}${g2}`)], []);
-    const mapper = (map1, map2, g1 = '', g2 = '') => map1.reduce((p, m1) => p.concat(map2.map(m2 => `${m1}${g1}${m2}${g2}`)), []);
+    const mapper = (map1, map2, g1 = '', g2 = '') => map1.reduce((p, m1) => p.concat(map2.map(m2 => m2? `${m1}${g1}${m2}${g2}`: `${m1}${g1}`)), []);
 
     const pMap = packageMap[name] || {};
     const cdns = pMap["cdn"] ?? Object.keys(cdnMap); // ['https://esm.run/', 'https://unpkg.com', 'https://cdn.jsdelivr.net/npm/', 'https://esm.sh', unpmGithubUrl];
@@ -77,15 +77,15 @@ async function fetchCdn(name, version = 'latest') {
 
     for(const a in urls) {
         console.log(eraseLine+urls[a]);
-        const result = await fetchAndWrite(urls[a]);
+        const result = await fetchAndWrite(urls[a], name, version);
         if (result) return true;
     }
 
-    async function fetchAndWrite(url) {
-        // console.log('fetchAndWrite', url);
+    async function fetchAndWrite(url, name, version) {
         const res = await fetch(url);
         if(res.status == 200) {
-            await writeRes(res);
+            await writeRes(res, name, version);
+            writeImportMap(name, url);
             return true;
         } else {
             console.log(res.status);
@@ -93,10 +93,23 @@ async function fetchCdn(name, version = 'latest') {
         }
     }
 
-    async function writeRes(res) {
+    async function writeRes(res, name, version) {
         const text = await res.text();
+        if(!fs.existsSync('./node_modules/')) fs.mkdirSync('./node_modules');
+        if(!fs.existsSync('./node_modules/'+name)) fs.mkdirSync('./node_modules/'+name);
         writeTextFileSync(path.join('./node_modules/', name, '/index.unpm.js'), text);
         // console.log(text);
+        writePackageJson(name, version);
+    }
+
+    function writePackageJson(name, version) {
+        console.log('writing module package.json for: ', name, version);
+    }
+
+    function writeImportMap(name, url) {
+        if(!import_map.exports) import_map.exports = {}
+        import_map.exports[name] = url;
+        writeTextFileSync('unpm.import_map.json', JSON.stringify(import_map, null, 4))
     }
 }
 
@@ -123,7 +136,7 @@ async function main() {
         // optimize existing node_modules bundles with esbuild and delete the previous ones // far-fetched :(
     } else {
         console.log('Installing '+args[1]);
-        await fetchCdn(args[1])
+        await fetchCdn(args[1]);
     }
 }
 
