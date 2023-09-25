@@ -303,14 +303,14 @@ export class Store {
   }
 
   static createCacheFolder() {
-    // ~/.cache/unpm/react@version/...
-    let cacheFolder = path.join(process.env.HOME, ".cache/unpm/");
+    const cacheDir = ".cache/unpm/node_modules/";
+    let cacheFolder = path.join(process.env.HOME, cacheDir);
     try {
       if (process.env.HOME && fs.existsSync(process.env.HOME)) {
         fs.mkdirSync(cacheFolder, { recursive: true });
       }
     } catch (e) {
-      cacheFolder = path.resolve(".cache/unpm/");
+      cacheFolder = path.resolve(cacheDir);
       fs.mkdirSync(cacheFolder, { recursive: true });
     }
     return cacheFolder;
@@ -327,17 +327,18 @@ async function main() {
 
     await Store.instance.downloadImportMapJson();
 
-    for (const d of Object.keys(deps)) {
-      console.log("\ndep:", d);
-      await fetchOrDownload(d, deps[d]);
-    }
-
     if (options.includes("--devdep") || options.includes("--dev-dep")) {
       for (const d of Object.keys(devDeps)) {
         console.log("\ndevDep:", d);
         fetchOrDownload(d, devDeps[d].replace(/^\^/, ""));
       }
     }
+
+    for (const d of Object.keys(deps)) {
+      console.log("\ndep:", d);
+      await fetchOrDownload(d, deps[d]);
+    }
+
   } else if (args[1] == "optimize") {
     // optimize existing node_modules bundles with esbuild and delete the previous ones // far-fetched :(
   } else {
@@ -466,7 +467,7 @@ async function downloadPackageFromRegistryTarball(
   version,
   esbuild = true,
 ) {
-  console.log(' ', "npm registry:", name, version, esbuild ? "+esbuild" : "");
+  console.log(" ", "npm registry:", name, version, esbuild ? "+esbuild" : "");
   const cacheDir = Store.createCacheFolder();
   const validVersion = isValidVersion(version);
 
@@ -514,9 +515,9 @@ async function downloadPackageFromRegistryTarball(
     }
   }
 
-  const preBuiltPackages = ['esbuild', '@esbuild/node'];
+  const preBuiltPackages = ["esbuild", "@esbuild"];
   let installFrom = versionDir;
-  if (esbuild && !preBuiltPackages.includes(name)) {
+  if (esbuild && !preBuiltPackages.includes(name.split("/")[0])) {
     // console.log("debug: esbuild");
     const installFromEsbuild = path.join(versionDir, ".esbuild");
     fs.mkdirSync(installFromEsbuild, { recursive: true });
@@ -528,32 +529,37 @@ async function downloadPackageFromRegistryTarball(
 
     const [entries, isPrebuilt] = getEntriesFromPackageDir(versionDir);
     if (isPrebuilt) {
-      console.log('  ', yellow("Package has a pre-built:"), entries);
+      console.log("  ", yellow("Package has a pre-built:"), entries);
 
-      fs.mkdirSync(path.join(installFromEsbuild, path.dirname(entries)), { recursive: true });
+      fs.mkdirSync(path.join(installFromEsbuild, path.dirname(entries)), {
+        recursive: true,
+      });
       fs.copyFileSync(
         path.join(versionDir, entries),
         path.join(installFromEsbuild, entries),
       );
+      installFrom = installFromEsbuild;
     } else {
       for (const entry of entries) {
+        console.log("entry:", entry);
         const extname = path.extname(entry);
-        // console.log('extname:', extname);
 
         const entryFile = path.join(versionDir, entry);
         const outfile = path.join(installFromEsbuild, entry); // path.relative();  path.join(path.dirname(entryFile), "./.esbuild/")),
-        switch(extname) {
-          case '.js':
+        switch (extname) {
+          case ".js":
             console.log(yellow("   Creating new build:"), entry, outfile);
             try {
               await createUmdBuild(entryFile, outfile);
               installFrom = installFromEsbuild;
-            } catch(e) {
-              // 
+            } catch (err) {
+              console.error("Error building", name, "with esbuild", err);
             }
             break;
           default:
-            fs.mkdirSync(path.join(installFromEsbuild, path.dirname(entry)), { recursive: true });
+            fs.mkdirSync(path.join(installFromEsbuild, path.dirname(entry)), {
+              recursive: true,
+            });
             fs.copyFileSync(
               path.join(versionDir, entry),
               path.join(installFromEsbuild, entry),
@@ -581,30 +587,39 @@ function getEntriesFromPackageDir(versionDir) {
   if (packageJson["unpkg"]) return [packageJson["unpkg"], true];
   if (packageJson["umd"]) return [packageJson["umd"], true];
   if (packageJson["production"]) return [packageJson["production"], true];
+
   const entryFiles = [];
-  if (packageJson["main"]) entryFiles.push(packageJson["main"]);
+  if (packageJson["main"]) pushEntry(packageJson["main"]);
   if (packageJson["module"] && !entryFiles.includes(packageJson["module"])) {
-    entryFiles.push(packageJson["module"]);
+    pushEntry(packageJson["module"]);
   }
   if (packageJson["types"] && !entryFiles.includes(packageJson["types"])) {
-    entryFiles.push(packageJson["types"]);
+    pushEntry(packageJson["types"]);
   }
-  if (packageJson["exports"] && typeof packageJson['exports'] == 'object') {
+  if (packageJson["exports"] && typeof packageJson["exports"] == "object") {
     const exports = packageJson["exports"];
-    for(const k in exports) {
-      if(exports[k] && !entryFiles.includes(exports[k])) {
-        const v = exports[k];
-        if (typeof v == 'string') entryFiles.push(v);
-        else if (typeof v == 'object') {
-          const umd = v['default'] || v['node']  || v['require'] || v['umd'] || v['cjs'] || v['browser'];
-          if (!entryFiles.includes(umd)) entryFiles.push(umd);
-        }
+    for (const k in exports) {
+      if (exports[k] && !entryFiles.includes(exports[k])) {
+        pushEntry(exports[k]);
+      }
+    }
+  }
+
+  function pushEntry(v) {
+    if (typeof v == "string") entryFiles.push(v);
+    else if (typeof v == "object") {
+      const umd = v["default"] || v["node"] || v["require"] || v["umd"] ||
+        v["cjs"] || v["browser"];
+      if (!entryFiles.includes(umd)) {
+        pushEntry(umd);
       }
     }
   }
 
   return [entryFiles, false];
 }
+
+const knownLibExternals = ["esbuild"];
 
 //const esbuild = require("esbuild");
 //const umdWrapper = require("esbuild-plugin-umd-wrapper");
@@ -617,19 +632,26 @@ async function createUmdBuild(entryFile, outfile) {
     return console.error("No such file: ", entryFile);
   }
 
-  return await esbuild
+  const external = [...knownLibExternals, ...((process.env.EXTERNAL || '').split(","))];
+  //console.log("external", external, process.env.EXTERNAL);
+
+  const prevCwd = process.cwd();
+  process.chdir(path.dirname(entryFile));
+  const result = await esbuild
     .build({
       entryPoints: [entryFile],
       // outdir: outdir || (path.join(path.dirname(entryFile), './.esbuild/')),
       outfile,
       format: "iife",
-      platform: 'node',
+      platform: "node",
       bundle: true,
       //plugins: [unpm_esbuild()],
-      external: ['esbuild', 'react', 'scheduler'],
+      external,
     });
   // .then((result) => console.log(result))
   // .catch(() => process.exit(1));
+  result;
+  process.chdir(prevCwd);
 }
 
 const unpmDefaultOptions = {};
