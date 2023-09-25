@@ -3,6 +3,7 @@
 */
 import fs, { read } from "fs";
 import path from "path";
+import cp from "child_process";
 import esbuild from "../esbuild_node/lib/main.js"
 // import umdWrapper from "esbuild-plugin-umd-wrapper";
 
@@ -171,12 +172,14 @@ export class Store {
     }
 
     readCache = {};
-    async getOrDownload(filepath, remoteUrl, text = '') {
+    async getOrDownload(filepath, remoteUrl, text = '', refetch = false) {
         if(this.readCache[filepath]) return this.readCache[filepath];
 
-        if(fs.existsSync(filepath)) {
+        if(!refetch && fs.existsSync(filepath)) {
             text = fs.readFileSync(filepath);
         } else {
+            fs.mkdirSync(path.dirname(filepath), {recursive: true});
+
             console.log('Downloading to '+filepath);
             const res = await fetch(remoteUrl);
             text = await res.text();
@@ -186,6 +189,24 @@ export class Store {
 
         this.readCache[filepath] = text;
         return text;
+    }
+
+    static async download(filepath, remoteUrl, overwrite = true) {
+        if(fs.existsSync(filepath) && !overwrite) {
+            // File already exists
+            console.log('File already exists');
+        } else {
+            fs.mkdirSync(path.dirname(filepath), {recursive: true});
+
+            console.log('Downloading to '+filepath);
+            const res = await fetch(remoteUrl);
+            const buffer = Buffer.from(await res.arrayBuffer());
+            fs.writeFileSync(filepath, buffer);
+
+            return true;
+        }
+
+        return false;
     }
 
     readPackageJson() {
@@ -214,15 +235,24 @@ export class Store {
         return this.parsedCommandInputs;
     }
 
+    static createCacheFolder() {
+        // ~/.cache/unpm/react@version/...
+        let cacheFolder = path.join(process.env.HOME, '.cache/unpm/');
+        try {
+            if(process.env.HOME && fs.existsSync(process.env.HOME)) {
+                fs.mkdirSync(cacheFolder, {recursive: true});
+            }
+        } catch(e) {
+            cacheFolder = path.resolve('.cache/unpm/');
+            fs.mkdirSync(cacheFolder, {recursive: true});
+        }
+        return cacheFolder;
+    }
 }
 
 async function main() {
     const [args, options] = Store.instance.parseCommandInputs();
     Store.set('options', options);
-
-    // if(process.env.HOME && fs.existsSync(process.env.HOME)) {
-    //     fs.mkdirSync(path.join(process.env.HOME, '.cache/unpm/'), {recursive: true});
-    // }
 
     if(!args[1] || args[1] == 'install' || args[1] == 'i') {
         console.log('Installing modules from package.json');
@@ -246,14 +276,17 @@ async function main() {
         await fetchOrDownload(args[1]);
     }
 
-    async function fetchOrDownload(d, e = '') {
+    async function fetchOrDownload(d, v = '') {
+        const version = v.replace(/^\^/, '');
         if(options.includes('--cdn')) {
-            await fetchCdn(d, e.replace(/^\^/, '')); // parallel processing //
+            await fetchCdn(d, version); // parallel processing //
         } else {
             if(options.includes('--npm')) {
-                await downloadPackageFromRegistryTarball(d, e.replace(/^\^/, ''));
+                await downloadPackageFromRegistryTarball(d, version);
+            } else if(options.includes('--esbuild')) {
+                await downloadIndexForEsBuildResolution(d, version);
             } else {
-                await downloadPackageFiles(d, e.replace(/^\^/, ''));
+                await downloadPackageFromRegistryTarball(d, version);
             }
         }
     }
@@ -261,10 +294,8 @@ async function main() {
 
 function json_parse(jsonText){ try { return JSON.parse(jsonText); } catch(e) { console.error('json_parse: ', e) } return {}; }
 
-main();
 
-
-async function downloadPackageFiles(name, version) {
+async function downloadIndexForEsBuildResolution(name, version) {
     // download from jsdeliver browse package.json and index file
     const n = getPackageNameWithNamespace(name);
 
@@ -294,8 +325,8 @@ async function downloadPackageFiles(name, version) {
         await Store.instance.getOrDownload(localFile, remoteFile);
     }
     if(packageJson['main:umd']) await download(packageJson['main:umd']);
-    if(packageJson['main']) await download(packageJson['main']);
-    if(packageJson['exports'] && 
+    else if(packageJson['main']) await download(packageJson['main']);
+    else if(packageJson['exports'] && 
         packageJson['exports'][subPath]) {
             const exp = packageJson['exports'][subPath];
             if(exp['default']) {
@@ -303,9 +334,9 @@ async function downloadPackageFiles(name, version) {
                 else if (exp['default']['.']) await download(exp['default']['.']);
                 else if (exp['default']['cjs']) await download(exp['default']['cjs']);
             }
-            if(exp['require']) {
+            else if(exp['require']) {
                 if (typeof exp['require'] == 'string') await download(exp['require']);
-                if (exp['require']['default']) await download(exp['require']['default']);
+                else if (exp['require']['default']) await download(exp['require']['default']);
                 else if (exp['require']['.']) await download(exp['require']['.']);
                 else if (exp['require']['cjs']) await download(exp['require']['cjs']);
             }
@@ -318,7 +349,7 @@ async function downloadPackageFiles(name, version) {
 
     if( ! excludedPackagesFromBundling.includes(name)) {
         Object.keys(files).map(async (f) => {
-            //await createUmdBuild(f);
+            await createUmdBuild(f);
         });
     }
 
@@ -328,14 +359,74 @@ async function downloadPackageFiles(name, version) {
     // const options = Store.get('options');
 }
 
+async function sh(cmd) {
+    return new Promise((resolve, reject) => cp.exec(cmd, function(err){if(err){console.error('exec: ', cmd, err); reject(err)}else resolve();}));
+}
 
-async function downloadPackageFromRegistryTarball(name, version) {
-    // 
+function isValidVersion(version){return version && version != 'latest' && version.split('.').length == 3;}
+
+async function downloadPackageFromRegistryTarball(name, version, esbuild = false) {
+    console.log('downloadPackageFromRegistryTarball');
+    const cacheDir = Store.createCacheFolder();
+    const validVersion = isValidVersion(version);
+
+    //const packageDir = `${name}/${version}`;
+    const packageDir = path.join(cacheDir, name);
+
+    console.log(validVersion, version);
+
+    const registryFile = path.join(packageDir, './registry.json');
+    const url = 'https://registry.npmjs.org/'+name;
+if (!validVersion) {
+        const registryJson = json_parse(await Store.instance.getOrDownload(registryFile, url, '', true));
+        version = registryJson['dist-tags']['latest']; // (validVersion? registryJson['dist-tags']['latest']: version);
+    }
+
+    const versionDir = path.join(packageDir, version);
+    if (!fs.existsSync(versionDir)) {
+        const registryJson = json_parse(await Store.instance.getOrDownload(registryFile, url, '', false));
+        const versionJson = registryJson['versions'][version];
+        const tarballUrl = versionJson['dist']['tarball'];
+        if(tarballUrl && tarballUrl.startsWith('https://')) {
+            const tarFile = path.join(packageDir, path.basename(tarballUrl));
+            // console.log(tarFile, tarballUrl);
+            const downloadResult = await Store.download(tarFile, tarballUrl);
+    
+            await sh(`tar -xf ${tarFile} -C ${packageDir}`);
+    
+            const renamed = path.join(packageDir, version+'.renamed');
+            const versioned = path.join(packageDir, version);
+    
+            if(fs.existsSync(renamed)) fs.rmdirSync(renamed);
+            if(fs.existsSync(versioned)) fs.renameSync(versioned, renamed);
+            fs.renameSync(path.join(packageDir, 'package'), versioned);
+        } else {
+            console.error('Cannout find a https:// tarball-url for '+name);
+        }
+    }
+
+    let installFrom = versionDir;
+    if(esbuild) {
+        const installFromEsbuild = path.join(versionDir, '.esbuild');
+        const entryFile = path.join(versionDir, getMainFileFromPackageDir(versionDir));
+        createUmdBuild(entryFile, installFromEsbuild);
+    }
+
+    if (fs.existsSync(installFrom)) {
+        console.log('Installing:', installFrom);
+        fs.cpSync(installFrom, path.join('./node_modules', name), {recursive: true}); // install local package :)
+    }
+
+}
+
+function getMainFileFromPackageDir() {
+    return 'index.js';
 }
 
 //const esbuild = require("esbuild");
 //const umdWrapper = require("esbuild-plugin-umd-wrapper");
-async function createUmdBuild(entryFile) {
+async function createUmdBuild(entryFile, outdir) {
+    const cacheDir = Store.createCacheFolder();
 
     console.log('entryFile:', path.resolve(entryFile));
     entryFile = path.resolve(entryFile);
@@ -343,7 +434,7 @@ async function createUmdBuild(entryFile) {
     return await esbuild
         .build({
             entryPoints: [entryFile],
-            outdir: "public",
+            outdir: outdir || (path.join(path.dirname(entryFile), './.esbuild/')),
             format: "iife",
             bundle: true,
             //plugins: [unpm_esbuild()],
@@ -354,17 +445,74 @@ async function createUmdBuild(entryFile) {
 }
 
 const unpmDefaultOptions = {};
-export function unpm_esbuild(customOptions) {
+async function unpm_esbuild(customOptions) {
     let options = { ...unpmDefaultOptions, ...customOptions };
     const plugin = {
         name: 'unpm',
         setup(build) {
             console.log('esbuild: setup:', build, options);
-        }
+            let nodeModulesPaths = {}; // : Set<string>;
+            let cache = new Map;
+
+            build.onStart(async function onStart() {
+                nodeModulesPaths = {};
+
+                // console.log('build.onStart:', args);
+            });
+
+            build.onResolve({ filter: /.*/ }, function onResolve(args) {
+                console.log('build.onResolve:', args.pluginData, args.importer, args);
+                if (args.pluginData === IN_NODE_MODULES_RESOLVED) return args;
+                if (args.pluginData === IN_NODE_MODULES) return undefined;
+
+                if(args.path.startsWith('https://') || args.path.startsWith('http://')) {
+                    // 
+                } else if (args.namespace == 'file') {
+                    const p = path.resolve(args.resolveDir, args.path);
+                    if (fs.existsSync(p)) {
+                        return { path: p, pluginData: IN_NODE_MODULES_RESOLVED };
+                    } else {
+                        // 3 ways to include a file:
+                        if (args.path.startsWith('./') || args.path.startsWith('../') || args.path.startsWith('@/')) {
+                            return { namespace: 'unpm-file', path: args.path, resolveDir: args.resolveDir };
+                        } else {
+                            return { namespace: 'unpm-http', path: args.path, resolveDir: args.resolveDir };
+                        }
+                    }
+                    // const res = await build.resolve(args.path, {
+                    //     importer: args.importer,
+                    //     namespace: args.namespace,
+                    //     kind: args.kind,
+                    //     resolveDir: args.resolveDir,
+                    //     pluginData: IN_NODE_MODULES,
+                    // });
+                }
+
+                if (nodeModulesPaths[args.importer]) {
+                    // 
+                    console.log('has:', build.resolve);
+                    console.log('resolve result:', res);
+                    /*
+                      if (!res.external) nodeModulesPaths.add(res.path);
+                      return res;
+                    */
+                }
+            });
+
+            build.onLoad({ filter: /\.example$/ }, async (args) => {
+                // ...
+                
+            });
+
+            // build.onLoad();
+        },
     }
 
     return plugin;
 }
+const IN_NODE_MODULES = Symbol("IN_NODE_MODULES");
+const IN_NODE_MODULES_RESOLVED = Symbol("IN_NODE_MODULES_RESOLVED");
+
 
 
 export const ANSIColors = {
@@ -384,3 +532,6 @@ export const yellow = m => colorify('yellow', m)
 export const blue = m => colorify('blue', m)
 export const cyan = m => colorify('cyan', m)
 export const colors = { red, green, yellow, blue, cyan };
+
+
+main();
