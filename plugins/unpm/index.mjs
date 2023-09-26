@@ -152,7 +152,7 @@ async function fetchCdn(name, version = "latest") {
       console.log(200, found.url);
 
       const specificVersion = getVersionFromUrl(
-        getPackageName(name),
+        getPackageNameWithNamespace(name),
         version,
         found.url,
       );
@@ -172,30 +172,19 @@ async function fetchCdn(name, version = "latest") {
       fs.mkdirSync("./node_modules/" + name, { recursive: true });
     }
     writeTextFileSync(path.join("./node_modules/", name, "/index.js"), text);
-    // console.log(text);
-    writePackageJson(name, version);
-  }
 
-  function writePackageJson(name, version) {
-    const packageJson = json_parse(fs.readFileSync("package.json"));
-    if (packageJson.dependencies) {
-      if (!packageJson.dependencies[name]) {
-        console.log("updating package.json in cwd:", name, "^" + version);
-        packageJson.dependencies[name] = "^" + (version.replace(/^\@\^/, ""));
-        writeTextFileSync("package.json", JSON.stringify(packageJson, null, 2));
-      }
-    }
     console.log("writing module package.json for: ", name, version);
+    writeTextFileSync(path.join("./node_modules/", name, "/package.json"), JSON.stringify({
+      name,
+      version,
+      type: "module",
+      source: res.url,
+    }, null, 2));
+
+    updatePackageJson(name, version);
   }
 
-  function getVersionFromUrl(name, version, url) {
-    //if(version == 'latest' || version.split('.').length < 3) {
-    const m = url.match(new RegExp("\\/" + name + "\\@" + "([\\d\\.]+)\\/"));
-    if (m && m[1]) return m[1];
-    // }
-    return version;
-  }
-
+  // // // 
   function writeImportMap(name, version, url) {
     if (!import_map.imports) import_map.imports = {};
     import_map.imports[name + "@" + version] = url;
@@ -204,12 +193,36 @@ async function fetchCdn(name, version = "latest") {
       JSON.stringify(import_map, null, 2),
     );
   }
+  // // // 
+
 }
 
 function writeTextFileSync(filename, data) {
   fs.mkdirSync(path.dirname(filename), { recursive: true });
   fs.writeFileSync(filename, data, { encoding: "utf8" });
 }
+
+
+function updatePackageJson(name, version) {
+  if ( ! fs.existsSync("package.json")) return;
+  const packageJson = json_parse(fs.readFileSync("package.json"));
+  if (packageJson.dependencies) {
+    if (!packageJson.dependencies[name]) {
+      // console.log("updating package.json in cwd:", name, "^" + version);
+      packageJson.dependencies[name] = "^" + (version.replace(/^\@\^/, ""));
+      writeTextFileSync("package.json", JSON.stringify(packageJson, null, 2));
+    }
+  }
+}
+
+function getVersionFromUrl(name, version, url) {
+  //if(version == 'latest' || version.split('.').length < 3) {
+  const m = url.match(new RegExp("\\/" + name + "\\@" + "([\\d\\.]+)\\/"));
+  if (m && m[1]) return m[1];
+  // }
+  return version;
+}
+
 
 export class Store {
   // pattern-1
@@ -321,35 +334,26 @@ async function main() {
   const [args, options] = Store.instance.parseCommandInputs();
   Store.set("options", options);
 
-  if (!args[1] || args[1] == "install" || args[1] == "i") {
-    console.log("Installing modules from package.json");
-    const [packageJson, deps, devDeps] = Store.instance.readPackageJson();
-
-    await Store.instance.downloadImportMapJson();
-
-    if (options.includes("--devdep") || options.includes("--dev-dep")) {
-      for (const d of Object.keys(devDeps)) {
-        console.log("\ndevDep:", d);
-        fetchOrDownload(d, devDeps[d].replace(/^\^/, ""));
-      }
+  if (args[1] == "install" || args[1] == "i") {
+    const params = args.slice(2);
+    if (!params.length) await installFromPackageJson();
+    else {
+      params.map(async p => installPackage(p.split('@')[0], p.split('@')[1]));
     }
-
-    for (const d of Object.keys(deps)) {
-      console.log("\ndep:", d);
-      await fetchOrDownload(d, deps[d]);
-    }
-
   } else if (args[1] == "optimize") {
     // optimize existing node_modules bundles with esbuild and delete the previous ones // far-fetched :(
   } else {
-    console.log("Installing " + args[1]);
-    await fetchOrDownload(args[1]);
+    const params = args.slice(1);
+    if (!params.length) await installFromPackageJson();
+    else {
+      params.map(async p => installPackage(p.split('@')[0], p.split('@')[1]));
+    }
   }
 
-  async function fetchOrDownload(d, v = "") {
+  async function installPackage(d, v = "") {
     const version = v.replace(/^\^/, "");
     if (options.includes("--cdn")) {
-      await fetchCdn(d, version); // parallel processing //
+      await fetchCdn(d, version); // skip await for parallel processing //
     } else {
       if (options.includes("--npm")) {
         await downloadPackageFromRegistryTarball(d, version);
@@ -363,8 +367,43 @@ async function main() {
         );
       }
     }
-  }
+  } // /fetchOrDownload
+
+  async function installFromPackageJson() {
+    if(!fs.existsSync('package.json')) {
+      return showHelp();
+    }
+    console.log("Installing modules from package.json");
+    const [packageJson, deps, devDeps] = Store.instance.readPackageJson();
+
+    await Store.instance.downloadImportMapJson();
+
+    if (options.includes("--devdeps") || options.includes("--dev-dep") || options.includes("--dev-deps")) {
+      for (const d of Object.keys(devDeps)) {
+        console.log("\ndevDep:", d);
+        installPackage(d, devDeps[d].replace(/^\^/, ""));
+      }
+    }
+
+    for (const d of Object.keys(deps)) {
+      console.log("\ndep:", d);
+      await installPackage(d, deps[d]);
+    }
+  }// /installFromPackageJson
+
+  // /main
 }
+
+function showHelp() {
+  console.log(yellow('Usage: '))
+  console.log('  unpm install            installs package.json packages');
+  console.log('  unpm i react            installs package react (latest version)');
+  console.log('  unpm i react@latest');
+  console.log('  unpm i react@18.2.0');
+  console.log('  unpm i --dev-deps    install devDependencies also from package.json');
+  console.log('  unpm i react --cdn   install prebuilt packages from cdns (unpkg.com or custom cdn) instead.');
+}
+
 
 function json_parse(jsonText) {
   try {
@@ -540,15 +579,22 @@ async function downloadPackageFromRegistryTarball(
       );
       installFrom = installFromEsbuild;
     } else {
+      const builtEntries = [];
       for (const entry of entries) {
-        console.log("entry:", entry);
         const extname = path.extname(entry);
 
         const entryFile = path.join(versionDir, entry);
-        const outfile = path.join(installFromEsbuild, entry); // path.relative();  path.join(path.dirname(entryFile), "./.esbuild/")),
+        const outfile = path.join(installFromEsbuild, entry);
+
+        if (builtEntries.includes(entryFile)) {
+          console.log(blue("   Found newly built:"), cyan(entry), '=>', blue(outfile));
+          continue;
+        }
+        builtEntries.push(entryFile);
+
         switch (extname) {
           case ".js":
-            console.log(yellow("   Creating new build:"), entry, outfile);
+            console.log(blue("   Creating new build:"), cyan(entry), '=>', blue(outfile));
             try {
               await createUmdBuild(entryFile, outfile);
               installFrom = installFromEsbuild;
@@ -576,6 +622,8 @@ async function downloadPackageFromRegistryTarball(
     fs.cpSync(installFrom, path.join("./node_modules", name), {
       recursive: true,
     }); // install local package :)
+    // update package.json :)
+    updatePackageJson(name, version);
   }
 }
 
@@ -645,7 +693,10 @@ async function createUmdBuild(entryFile, outfile) {
       format: "iife",
       platform: "node",
       bundle: true,
-      //plugins: [unpm_esbuild()],
+      minify: true,
+      plugins: [unpm_esbuild({
+        cacheDir
+      })],
       external,
     });
   // .then((result) => console.log(result))
@@ -654,24 +705,27 @@ async function createUmdBuild(entryFile, outfile) {
   process.chdir(prevCwd);
 }
 
-const unpmDefaultOptions = {};
-async function unpm_esbuild(customOptions) {
-  let options = { ...unpmDefaultOptions, ...customOptions };
+const unpmDefaultOptions = {
+  cacheDir: '.',
+};
+
+function unpm_esbuild(customOptions) {
+  const options = { ...unpmDefaultOptions, ...customOptions };
   const plugin = {
     name: "unpm",
     setup(build) {
-      console.log("esbuild: setup:", build, options);
+      //console.log("esbuild: setup:", build, options);
       let nodeModulesPaths = {}; // : Set<string>;
       let cache = new Map();
 
       build.onStart(async function onStart() {
         nodeModulesPaths = {};
-
         // console.log('build.onStart:', args);
       });
 
       build.onResolve({ filter: /.*/ }, function onResolve(args) {
-        console.log("build.onResolve:", args.pluginData, args.importer, args);
+        // console.log("build.onResolve:", args.pluginData, args.importer, args);
+        /*
         if (args.pluginData === IN_NODE_MODULES_RESOLVED) return args;
         if (args.pluginData === IN_NODE_MODULES) return undefined;
 
@@ -715,11 +769,10 @@ async function unpm_esbuild(customOptions) {
           //
           console.log("has:", build.resolve);
           console.log("resolve result:", res);
-          /*
-                      if (!res.external) nodeModulesPaths.add(res.path);
-                      return res;
-                    */
+          // if (!res.external) nodeModulesPaths.add(res.path);
+          // return res;
         }
+        */
       });
 
       build.onLoad({ filter: /\.example$/ }, async (args) => {
