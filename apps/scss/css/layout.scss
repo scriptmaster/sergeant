@@ -1,5 +1,22 @@
 header {
     border-bottom: 1px solid #ddd;
+    padding: 8px 32px;
+
+    font-size: 12px;
+    height: 44px;
+    display: flex;
+    place-items: center;
+    flex-direction: row;
+}
+
+header.apple {
+    font-size: 14px;
+    background-color: rgba(22, 22, 23, 0.8);
+    color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: saturate(1.8) blur(20px);
+    .nav, nav {
+        font-size: 12px;
+    }
 }
 
 nav, .nav {
@@ -48,6 +65,7 @@ main {
 footer {
     background-color: var(--bg-footer);
     color: var(--fg-footer);
+    min-height: 80vh;
     a, a:visited {
         color: var(--fg-footer);
     }
