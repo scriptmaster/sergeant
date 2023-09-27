@@ -1,8 +1,9 @@
-/** @jsx h */
-import { h } from 'preact';
+import React from 'react';
+
+import AppleLayout from "../layouts/x/AppleLayout.tsx";
 
 export function Home() {
-    return <div>
+    return <AppleLayout>
         Home Sweet Home
-    </div>
+    </AppleLayout>
 }

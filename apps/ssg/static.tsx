@@ -6,8 +6,6 @@ import { Home } from "./pages/home.tsx";
 import { About } from "./pages/about.tsx";
 import { Search } from "./pages/search.tsx";
 
-const Foo = () => <div>foo</div>;
-
 interface RenderRoute {
     path: string;
     app?: string;

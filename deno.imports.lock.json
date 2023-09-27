@@ -1,12 +1,10 @@
 {
   "imports": {
-    "react-redux": "file:///Users/msheriff/Projects/dev/deno/sergeant/vendor/github.com/react-redux/src/index.ts",
-    "typescript": "https://esm.sh/typescript",
-    "react-dom": "https://esm.sh/react-dom@18.2.0?prod",
-    "test.js": "https://esm.sh/test.js",
-    "preact": "https://esm.sh/preact@10.17.1",
-    "react": "https://esm.sh/react@18.2.0?prod",
-    "vue": "https://esm.sh/vue@3.3.4",
-    "undefined": "https://esm.sh/undefined"
+    "preact-render-to-string/jsx": "https://esm.sh/preact-render-to-string@6.2.1/jsx",
+    "preact-router": "https://esm.sh/preact-router@4.1.2",
+    "inversify": "https://esm.sh/inversify",
+    "preact": "https://esm.sh/preact@10.17.1?dts",
+    "react": "https://esm.sh/preact@10.17.1/compat?dts",
+    "sfpro": "https://esm.sh/sfpro"
   }
 }
