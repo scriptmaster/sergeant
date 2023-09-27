@@ -3,7 +3,7 @@ import { appSettings, topMenu } from "../../stores/app_settings.ts";
 
 export default function AppleLayout(props: {title?: string, children: React.ReactNode}) {
     return <>
-        <header className="double-nav-top emerald">
+        <header  className={'double-nav-top '+(appSettings.value["site_theme"] || '')}>
             <nav>
                 <span><a href="/">{appSettings.value["site_name"]}</a></span>
                 <ul>
