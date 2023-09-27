@@ -1,32 +1,76 @@
-header {
-    border-bottom: 1px solid #ddd;
-    padding: 8px 32px;
-
-    font-size: 12px;
-    height: 44px;
+@mixin flexr() {
     display: flex;
-    place-items: center;
     flex-direction: row;
 }
 
-header.apple {
-    font-size: 14px;
-    background-color: rgba(22, 22, 23, 0.8);
-    color: rgba(255, 255, 255, 0.8);
-    backdrop-filter: saturate(1.8) blur(20px);
-    .nav, nav {
-        font-size: 12px;
+@mixin flexc() {
+    display: flex;
+    flex-direction: column;
+}
+
+@mixin flexr_center() {
+    display: flex;
+    flex-direction: row;
+    place-items: center;
+}
+
+@mixin flexr_space_between() {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+header {
+    border-bottom: 1px solid #ddd;
+    padding: 0 32px;
+
+    font-size: 12px;
+    height: 44px;
+    @include flexr_center();
+
+    & > span, & > nav > span {
+        font-size: 21px;
+    }
+
+    &.double-nav-top {
+        color: var(--fg-double-nav-top);
+        background-color: var(--bg-double-nav-top);
+
+        &.emerald {
+            color: var(--fg-double-nav-green);
+            background-color: var(--bg-double-nav-green);
+        }
+
+        backdrop-filter: saturate(1.8) blur(20px);
+        nav {
+            width: 100%;
+
+            & > span {
+                font-size: 14px;
+            }
+        }
+        a {
+            color: rgba(255, 255, 255, 0.8);
+        }
+    }
+
+    ul {
+        @include flexr();
     }
 }
 
 nav, .nav {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
+    /* use container mixin? */
     max-width: calc(var(--nav-width) + var(--gap) * 2);
     margin-inline-start: auto;
     margin-inline-end: auto;
-    line-height: var(--header-height);
+
+    width: 100%;
+
+    line-height: var(--nav-height);
+
+    @include flexr_space_between();
+    flex-wrap: wrap;
 }
 
 .logo {

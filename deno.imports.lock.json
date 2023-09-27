@@ -5,6 +5,6 @@
     "inversify": "https://esm.sh/inversify",
     "preact": "https://esm.sh/preact@10.17.1?dts",
     "react": "https://esm.sh/preact@10.17.1/compat?dts",
-    "sfpro": "https://esm.sh/sfpro"
+    "@preact/signals": "https://esm.sh/@preact/signals"
   }
 }

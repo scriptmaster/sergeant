@@ -39,9 +39,11 @@
 @include color2((
   default: rgb(31 35 40) #fff,
   emphasis: rgb(255, 255, 255) rgb(36, 41, 47),
-
   accent: rgb(9, 105, 218) #fff,
 
+  // layout colors
+  double-nav-top: rgba(255, 255, 255, 0.8) rgba(22, 22, 22, 0.8),
+  double-nav-green: rgba(255, 255, 255, 0.8) #016732cc,
   footer: #eee #000,
 ));
 
