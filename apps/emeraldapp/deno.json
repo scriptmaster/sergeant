@@ -10,5 +10,7 @@
         "jsx": "react-jsx",
         "protos": "protos"
     },
-    "watch": ["emeraldcss"]
+    "watch": ["emeraldcss"],
+    "tsx_prefix": "///**tsx_prefx**///",
+    "tsx_header": "import React from 'react';\n"
 }

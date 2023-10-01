@@ -11,3 +11,14 @@ export const topMenu = useSignal([
     {name: 'Limited', path: '/limited'},
 ]);
 
+export const pageMenu = useSignal({
+    '': [
+        {name: 'Charts', path: '/charts'},
+    ],
+    '/services': {
+        'Service 1': '/charts',
+        'Timelog Service': '/timelog',
+        'Multi-Project Management': '/program-management',
+    }
+})
+

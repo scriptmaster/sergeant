@@ -5,6 +5,7 @@
         "preact": "https://esm.sh/preact@10.17.1",
         "preact-router": "https://esm.sh/preact-router@4.1.2",
         "preact-render-to-string/jsx": "https://esm.sh/preact-render-to-string@6.2.1/jsx",
+        "@preact/compat": "https://esm.sh/@preact/compat@17.1.2",
         "react-redux": "./vendor/github.com/react-redux/src/index.ts",
         "vue": "https://esm.sh/vue@3.3.4",
         "test.js": "https:/esm.sh/test.js"

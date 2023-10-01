@@ -1,10 +1,10 @@
 /** @jsx h */
 /** @jsxFrag Fragment */
-import { h, Fragment } from 'preact';
-//*-*-*-*-*-*-*-*-*-*-*-*-*-*- AUTO_GENERATED_PREFIX *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-//
-import { appSettings, topMenu } from "../../stores/app_settings.ts";
+import { h, Fragment, ComponentChildren as Children } from 'preact';
+///**tsx_prefx**///
+import { appSettings, topMenu, pageMenu } from "../../stores/app_settings.ts";
 
-export default function AppleLayout(props: {title?: string, children: React.ReactNode}) {
+export default function AppleLayout(props: {title?: string, children: Children}) {
     return <>
         <header  className={'double-nav-top '+(appSettings.value["site_theme"] || '')}>
             <nav>
@@ -19,6 +19,11 @@ export default function AppleLayout(props: {title?: string, children: React.Reac
         <header>
             <nav>
                 <span>{props.title || 'Welcome'}</span>
+                <ul>
+                    {pageMenu.value[''].map((item: { name: string, path: string }) => {
+                        return <li><a href={item.path}>{item.name}</a></li>
+                    })}
+                </ul>
             </nav>
         </header>
         <main>{props.children}</main>

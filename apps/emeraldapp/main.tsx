@@ -1,6 +1,6 @@
 /** @jsx h */
 import { h } from 'preact';
-//*-*-*-*-*-*-*-*-*-*-*-*-*-*- AUTO_GENERATED_PREFIX *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-//
+///**tsx_prefx**///
 import { render } from 'preact';
 
 // import { Container, injectable, inject } from "inversify";

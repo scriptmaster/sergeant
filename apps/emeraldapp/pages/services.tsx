@@ -4,8 +4,8 @@ import { h } from 'preact';
 import { PageProps } from "../types/page.ts";
 import AppleLayout from "../layouts/x/AppleLayout.tsx";
 
-export function Home(props: PageProps) {
-    return <AppleLayout title="Welcome">
-        Welcome to Emerald
+export function Services(props: PageProps) {
+    return <AppleLayout title="Services">
+        Services page
     </AppleLayout>
 }

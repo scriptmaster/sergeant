@@ -311,13 +311,13 @@ export function denoLoaderPlugin(
             return { loader: 'css', contents: css.toString() }
           }
           return { loader: 'css', contents };
-        // } else if (args.namespace=='file' && /(\.(vue|vuex))$/.test(args.path)) {
-        //   debug('vue:', args.path);
+          // } else if (args.namespace=='file' && /(\.(vue|vuex))$/.test(args.path)) {
+          //   debug('vue:', args.path);
 
-        //   const loader = new VueLoader(options.context as CompilerContext);
-        //   const contents = await loader.vue(args.path);
+          //   const loader = new VueLoader(options.context as CompilerContext);
+          //   const contents = await loader.vue(args.path);
 
-        //   return { loader: 'tsx', contents };
+          //   return { loader: 'tsx', contents };
         } else if (args.namespace=='file' && !/(\.(tsx|ts|jsx|js))$/.test(args.path)) {
           if (Deno.env.get('LOG')=='DEBUG') console.log('CHECK FILE::', args.path);
           if(existsSync(args.path)) {
