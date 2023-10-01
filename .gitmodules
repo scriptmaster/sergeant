@@ -4,3 +4,6 @@
 [submodule "plugins/import"]
 	path = plugins/import
 	url = https://github.com/scriptmaster/import
+[submodule "apps/emeraldcss"]
+	path = apps/emeraldcss
+	url = ssh://git@github.com/scriptmaster/emeraldcss

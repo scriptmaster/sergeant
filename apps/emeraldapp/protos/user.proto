@@ -1,0 +1,9 @@
+// rpc service
+// message
+
+// Remote Data Model
+// Display ViewModel
+
+message User {
+    name: string
+}
