@@ -114,7 +114,21 @@ async function serveApps(appName: string) {
 interface DenoPluginOpts {
   configPath?: string
   context?: object
-};
+}
+
+
+
+function getDenoJsonFile(appDir: string) {
+  const denoJson = Deno.env.get('DENO_JSON') ?? "deno.json";
+  const denoJsonFile = join(appDir, denoJson);
+  // // //
+  if (existsSync(denoJsonFile)) {
+    return denoJsonFile;
+  } else if (existsSync(join(cwd, denoJson))) {
+    return join(cwd, denoJson);
+  }
+  // // //
+}
 
 async function buildApp(appName: string) {
   const appDir = app(appName);
@@ -138,18 +152,10 @@ async function buildApp(appName: string) {
 
   console.log(bgRgb8(rgb8("Building:", 0), 6), appName);
 
-  const denoJson = Deno.env.get('DENO_JSON') ?? "deno.json";
-  //const restoreCwd = join(Deno.cwd(), "./");
-  //Deno.chdir(dir);
   const denoPluginOpts: DenoPluginOpts = { context: new Object };
-  const denoJsonFile = join(appDir, denoJson);
 
-  // console.log('denoJsonFile: ', denoJsonFile);
-  if (existsSync(denoJsonFile)) {
-    denoPluginOpts.configPath = denoJsonFile;
-  } else if (existsSync(join(cwd, denoJson))) {
-    denoPluginOpts.configPath = join(cwd, denoJson);
-  }
+  const denoJsonFile = getDenoJsonFile(appDir);
+  if (denoJsonFile) denoPluginOpts.configPath = denoJsonFile;
 
   const entryPoints = [];
   entryPoints.push(mainEntry);
@@ -453,26 +459,83 @@ function debounce(
 async function watchForBuild(appName: string) {
   // second watcher is to do the build :D BRILLIANT!
   const appDir = app(appName);
-  const shouldBuildWatcher = Deno.watchFs(appDir, {
-    recursive: true,
-  });
+  console.log("Watching:", appDir);
+
+  const recursiveOption = { recursive: true };
+  const mainAppWatcher = Deno.watchFs(appDir, recursiveOption);
 
   const excludes = [
     join(appDir, "dist"),
   ];
 
-  for await (const event of shouldBuildWatcher) {
-    for (const p of event.paths) {
-      const dn = dirname(p);
-      // console.debug(dn, excludes.includes(dn));
-      if (!excludes.includes(dn)) {
-        debounce(dn, () => {
-          console.log("buildApp", dn);
-          buildApp(appName);
-        });
+  // const extraDir = ["watch", "symlinks", "links", "plugins", "deps"];
+  //const watchFilesystems = [mainAppWatcher].concat(getFirstLevelSymlinks(appDir).map(symLinkDir => Deno.watchFs(symLinkDir, recursiveOption)));
+  const extraWatcherDirs = getExtraWatcheDirs(appDir);
+  extraWatcherDirs.map(d => console.log("Watching:", d));
+
+  const extraWatchFs = extraWatcherDirs.map((w: string) => Deno.watchFs(w, recursiveOption));
+  const symLinks = getFirstLevelSymlinks(appDir).map(symLinkDir => Deno.watchFs(symLinkDir, recursiveOption));
+  const watchFilesystems = [mainAppWatcher].concat(extraWatchFs).concat(symLinks);
+
+  for(const watchFs of watchFilesystems) {
+    setupWatch(watchFs); // parallel watcher
+  }
+
+  async function setupWatch(watchFs: Deno.FsWatcher) {
+    for await (const event of watchFs) {
+      for (const p of event.paths) {
+        const dn = dirname(p);
+        if (!excludes.includes(dn)) {
+          debounce(appName, () => {
+            console.log("buildApp", dn);
+            buildApp(appName);
+          });
+        }
       }
     }
   }
+}
+
+function json_parse(filepath: string) {
+  try {
+    return JSON.parse(Deno.readTextFileSync(filepath));
+  } catch(e) { console.error('Error in json_parse', e); }
+}
+
+function getExtraWatcheDirs(appDir: string) {
+  const watchDirs: string[] = [];
+  try {
+    const denoJsonFile = getDenoJsonFile(appDir);
+    if (!denoJsonFile) return watchDirs;
+    const denoJson = json_parse(denoJsonFile);
+    if(denoJson.watch) {
+      return (denoJson.watch || [])
+        .map((p: string) => join(app(p)) + '/')
+        .filter(existsSync);
+    }
+  } catch(e) { console.error('e:', e); }
+  return watchDirs;
+}
+
+function getFirstLevelSymlinks(dir: string) {
+  const symLinks: string[] = [];
+  try {
+    // 
+    for (const dirEntry of Deno.readDirSync(dir)) {
+      if(dirEntry.isSymlink) {
+        // console.log('dirEntry:', dirEntry.name, dirEntry.isDirectory);
+      } else if (dirEntry.isDirectory) {
+        const dirEntryPath = join(dir, dirEntry.name);
+        for (const firstLevelDir of Deno.readDirSync(dirEntryPath)) {
+          if(firstLevelDir.isSymlink) {
+            // console.log('First-level symlink:', firstLevelDir.name, dirEntryPath);
+            symLinks.push(dirEntryPath + '/');
+          }
+        }
+      }
+    }
+  } catch(e) { console.error(e); }
+  return symLinks;
 }
 
 //const refreshInjeectScript='\n<script src="https://deno.land/x/refresh/client.js"></script>\n';
