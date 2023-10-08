@@ -56,19 +56,52 @@ Done
 4. Support bundling multiple apps, SPAs via micro-services / app-routing
 5. Support progressive and offline apps
 
-# Install
-
-Only need deno and the file sergeant.ts to install sergeant (imports esbuild)
-`deno install -A -f sergeant.ts`
-
 # Commands
-
 ```
 sergeant
 sergeant build
 sergeant serve
 sergeant serve --dev
 ```
+
+# Install
+Only need deno to install sergeant (esbuild is automatically imported):
+
+## sergeant
+
+```
+deno install -A -f -n sergeant https://cdn.jsdelivr.net/gh/scriptmaster/sergeant/sergeant.ts
+```
+
+Only need deno and sergeant and you can do `sergeant` or `sergeant serve`
+
+### Build All apps:
+`sergeant build`
+
+### Live Dev Server all apps:
+`sergeant serve`
+
+
+### Build specific app:
+`sergeant build`
+
+### Live Dev Server specific app:
+`sergeant serve`
+
+
+## Installing Deno
+https://docs.deno.com/runtime/manual/getting_started/installation
+
+### Windows x64: 
+Using PowerShell (Windows):
+irm https://deno.land/install.ps1 | iex
+
+#### Or Using Chocolatey:
+choco install deno
+
+### MacOS: brew install deno
+
+
 
 # Deno Plugins:
 Uses:
