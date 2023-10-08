@@ -37,7 +37,7 @@ printASCII();
 const cwd = Deno.cwd();
 
 const appsDir = existsSync(join(cwd, "src")) ? "src" : "apps";
-const distDir = existsSync(join(cwd, "assets/js/")) ? "assets/js/" : "dist";
+const distDir = existsSync(join(cwd, "assets/js/")) ? "assets/js/" : existsSync(join(cwd, "static/"))? "static/": "dist";
 
 const args = Deno.args;
 const command = args[0];

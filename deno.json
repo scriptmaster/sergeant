@@ -8,7 +8,8 @@
         "@preact/compat": "https://esm.sh/@preact/compat@17.1.2",
         "react-redux": "./vendor/github.com/react-redux/src/index.ts",
         "vue": "https://esm.sh/vue@3.3.4",
-        "test.js": "https:/esm.sh/test.js"
+        "d3": "https://esm.sh/d3@7.8.5",
+        "emeraldcss": "https://esm.sh/emeraldcss"
     },
     "compilerOptions": {
         "jsx": "react-jsx"

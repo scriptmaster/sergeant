@@ -1,7 +1,7 @@
 /*
     umpm - Universal Package Manager
 */
-import fs, { read } from "fs";
+import fs from "fs";
 import path from "path";
 import cp from "child_process";
 import esbuild, { version } from "../esbuild_node/lib/main.js";
@@ -202,9 +202,9 @@ function writeTextFileSync(filename, data) {
   fs.writeFileSync(filename, data, { encoding: "utf8" });
 }
 
-
 function updatePackageJson(name, version) {
   if ( ! fs.existsSync("package.json")) return;
+  console.log('Updating package.json');
   const packageJson = json_parse(fs.readFileSync("package.json"));
   if (packageJson.dependencies) {
     if (!packageJson.dependencies[name]) {
@@ -213,6 +213,30 @@ function updatePackageJson(name, version) {
       writeTextFileSync("package.json", JSON.stringify(packageJson, null, 2));
     }
   }
+}
+
+function installBinaries(name, version) {
+  const rootDir = '.';
+  const entries = Store.get('node_modules/.bin/' + name);
+  // console.log('Install binaries: ', path.join(rootDir, 'node_modules/.bin/', name), entries);
+  entries.forEach((v, i) => {
+    const binPath = path.join(rootDir, 'node_modules/.bin/');
+    const newLinkFile = path.join(binPath, v.binary);
+    // fs.symlink(existingTargetFile, newLinkFile);
+    const targetPath = path.join(rootDir, 'node_modules', name, v.file);
+    //console.log(targetPath, '<--', newLinkFile);
+    const relativeTargetPath = path.relative(binPath, targetPath);
+    //console.log(newLinkFile, '-->', relativeTargetPath);
+    if (fs.existsSync(newLinkFile)) {
+      // console.log('Deleting file: ', newLinkFile);
+      fs.unlinkSync(newLinkFile);
+    }
+    fs.mkdirSync(path.dirname(newLinkFile), {recursive: true});
+    if (fs.existsSync(targetPath)) {
+      console.log(green('Symlink:'), cyan(newLinkFile), '-->', targetPath);
+      fs.symlinkSync(relativeTargetPath, newLinkFile, 'file', console.log.bind(console));
+    }
+  });
 }
 
 function getVersionFromUrl(name, version, url) {
@@ -269,6 +293,17 @@ export class Store {
     return text;
   }
 
+  readFile(filepath, refetch = false, text = "") {
+    if (this.readCache[filepath]) return this.readCache[filepath];
+
+    if (!refetch && fs.existsSync(filepath)) {
+      text = fs.readFileSync(filepath);
+    }
+
+    this.readCache[filepath] = text;
+    return text;
+  }
+
   static async download(filepath, remoteUrl, overwrite = true) {
     if (fs.existsSync(filepath) && !overwrite) {
       // File already exists
@@ -287,8 +322,8 @@ export class Store {
     return false;
   }
 
-  readPackageJson() {
-    const packageJson = json_parse(fs.readFileSync("package.json"));
+  readPackageJson(prefix = '') {
+    const packageJson = json_parse(this.readFile(path.join(prefix, "package.json")));
     const deps = packageJson.dependencies || {};
     const devDeps = packageJson.devDependencies || {};
     return [packageJson, deps, devDeps];
@@ -318,6 +353,7 @@ export class Store {
   static createCacheFolder() {
     const cacheDir = ".cache/unpm/node_modules/";
     let cacheFolder = path.join(process.env.HOME, cacheDir);
+
     try {
       if (process.env.HOME && fs.existsSync(process.env.HOME)) {
         fs.mkdirSync(cacheFolder, { recursive: true });
@@ -449,6 +485,11 @@ async function downloadIndexForEsBuildResolution(name, version) {
     files[localFile] = remoteFile;
     await Store.instance.getOrDownload(localFile, remoteFile);
   };
+
+  // install bin files
+  console.log('packageJson["bin"]', packageJson["bin"]);
+  if (packageJson["bin"]) await download(packageJson["bin"]);
+
   if (packageJson["main:umd"]) await download(packageJson["main:umd"]);
   else if (packageJson["main"]) await download(packageJson["main"]);
   else if (
@@ -566,7 +607,7 @@ async function downloadPackageFromRegistryTarball(
       path.join(installFromEsbuild, "package.json"),
     );
 
-    const [entries, isPrebuilt] = getEntriesFromPackageDir(versionDir);
+    const [entries, isPrebuilt] = getEntriesFromPackageDir(versionDir, name);
     if (isPrebuilt) {
       console.log("  ", yellow("Package has a pre-built:"), entries);
 
@@ -577,7 +618,7 @@ async function downloadPackageFromRegistryTarball(
         path.join(versionDir, entries),
         path.join(installFromEsbuild, entries),
       );
-      installFrom = installFromEsbuild;
+      //installFrom = installFromEsbuild;
     } else {
       const builtEntries = [];
       for (const entry of entries) {
@@ -597,7 +638,7 @@ async function downloadPackageFromRegistryTarball(
             console.log(blue("   Creating new build:"), cyan(entry), '=>', blue(outfile));
             try {
               await createUmdBuild(entryFile, outfile);
-              installFrom = installFromEsbuild;
+              //installFrom = installFromEsbuild;
             } catch (err) {
               console.error("Error building", name, "with esbuild", err);
             }
@@ -610,7 +651,7 @@ async function downloadPackageFromRegistryTarball(
               path.join(versionDir, entry),
               path.join(installFromEsbuild, entry),
             );
-            installFrom = installFromEsbuild;
+            //installFrom = installFromEsbuild;
             break;
         }
       }
@@ -623,15 +664,37 @@ async function downloadPackageFromRegistryTarball(
       recursive: true,
     }); // install local package :)
     // update package.json :)
+    installBinaries(name, version);
     updatePackageJson(name, version);
   }
 }
 
-function getEntriesFromPackageDir(versionDir) {
-  const packageJson = json_parse(
-    fs.readFileSync(path.join(versionDir, "package.json")),
-  );
-  // console.log("packageJson: ", packageJson);
+function writeBinEntriesFromPackageJson(packageJson, name) {
+  // // ... 
+  const entryFiles = [];
+  const binPath = path.join('.', 'node_modules/.bin/');
+  // // ... 
+  if ( packageJson["bin"] ) {
+    for (const k in packageJson["bin"]) {
+      if (k && !entryFiles.includes(packageJson["bin"][k])) {
+        const file = packageJson["bin"][k];
+        entryFiles.push({
+          binary: k,
+          file,
+          // path: targetPath,
+        });
+      }
+    }
+  }
+
+  // // ... 
+  const binEntries = Store.get('node_modules/.bin/'+name) || [];
+  Store.set('node_modules/.bin/'+name, [...binEntries, ...entryFiles]);
+  // // ...
+}
+
+function getEntriesFromPackageDir(versionDir, name) {
+  const [packageJson] = Store.instance.readPackageJson(versionDir);
   if (packageJson["unpkg"]) return [packageJson["unpkg"], true];
   if (packageJson["umd"]) return [packageJson["umd"], true];
   if (packageJson["production"]) return [packageJson["production"], true];
@@ -644,6 +707,19 @@ function getEntriesFromPackageDir(versionDir) {
   if (packageJson["types"] && !entryFiles.includes(packageJson["types"])) {
     pushEntry(packageJson["types"]);
   }
+
+  // install bin files
+  // console.log('packageJson["bin"]', packageJson["bin"]);
+  if ( packageJson["bin"] ) {
+    for (const k in packageJson["bin"]) {
+      if (k && !entryFiles.includes(packageJson["bin"][k])) {
+        pushEntry(packageJson["bin"][k]);
+      }
+    }
+    // // ...
+    writeBinEntriesFromPackageJson(packageJson, name);
+  }
+
   if (packageJson["exports"] && typeof packageJson["exports"] == "object") {
     const exports = packageJson["exports"];
     for (const k in exports) {
