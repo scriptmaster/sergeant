@@ -26,6 +26,7 @@ import { refresh } from "https://deno.land/x/refresh@1.0.0/mod.ts";
 import { serve } from "https://deno.land/std@0.200.0/http/server.ts";
 import { contentType } from "https://deno.land/std@0.201.0/media_types/content_type.ts";
 import { importString } from './plugins/import/mod.ts';
+//import type { Dictionary } from 'https://deno.land/x/ts_essentials/mod.ts'
 
 // To get started:
 // deno install -A -f sergeant.ts; sergeant serve
@@ -459,7 +460,7 @@ function debounce(
 async function watchForBuild(appName: string) {
   // second watcher is to do the build :D BRILLIANT!
   const appDir = app(appName);
-  console.log("Watching:", appDir);
+  console.log("\tWatching:", appDir);
 
   const recursiveOption = { recursive: true };
   const mainAppWatcher = Deno.watchFs(appDir, recursiveOption);
@@ -471,7 +472,7 @@ async function watchForBuild(appName: string) {
   // const extraDir = ["watch", "symlinks", "links", "plugins", "deps"];
   //const watchFilesystems = [mainAppWatcher].concat(getFirstLevelSymlinks(appDir).map(symLinkDir => Deno.watchFs(symLinkDir, recursiveOption)));
   const extraWatcherDirs = getExtraWatcheDirs(appDir);
-  extraWatcherDirs.map(d => console.log("Watching:", d));
+  extraWatcherDirs.map((d: string) => console.log("\tWatching: [Extra]", d));
 
   const extraWatchFs = extraWatcherDirs.map((w: string) => Deno.watchFs(w, recursiveOption));
   const symLinks = getFirstLevelSymlinks(appDir).map(symLinkDir => Deno.watchFs(symLinkDir, recursiveOption));
@@ -509,8 +510,11 @@ function getExtraWatcheDirs(appDir: string) {
     if (!denoJsonFile) return watchDirs;
     const denoJson = json_parse(denoJsonFile);
     if(denoJson.watch) {
-      return (denoJson.watch || [])
-        .map((p: string) => join(app(p)) + '/')
+      let watches = (denoJson.watch || [])
+      if (typeof watches == 'string') watches = [watches];
+
+      // join(1param) returns the dir without /
+      return watches.map((p: string) => join(app(p)) + '/')
         .filter(existsSync);
     }
   } catch(e) { console.error('e:', e); }
@@ -538,8 +542,8 @@ function getFirstLevelSymlinks(dir: string) {
   return symLinks;
 }
 
-//const refreshInjeectScript='\n<script src="https://deno.land/x/refresh/client.js"></script>\n';
-const refreshInjeectScriptMinified =
+//const refreshInjectScript='\n<script src="https://deno.land/x/refresh/client.js"></script>\n';
+const refreshInjectScriptMinified =
   '\n<script>(e=>{let n,t;function o(e){console.info("[refresh] ",e)}function i(){e.reload()}function r(c){n&&n.close(),(n=new WebSocket(`${e.origin.replace("http","ws")}/_r`)).addEventListener("open",c),n.addEventListener("message",()=>{o("reloading..."),i()}),n.addEventListener("close",()=>{o("connection lost - reconnecting..."),clearTimeout(t),t=setTimeout(()=>r(i),1e3)})}r()})(location);</script>\n';
 
 // https://dev.to/craigmorten/how-to-code-live-browser-refresh-in-deno-309o
@@ -595,7 +599,7 @@ async function serveRefresh(appName: string, port: number) {
     const html = existsSync(htmlPath) ? Deno.readTextFileSync(htmlPath) : "";
 
     return new Response(
-      html.replace("</body>", refreshInjeectScriptMinified + "</body>"),
+      html.replace("</body>", refreshInjectScriptMinified + "</body>"),
       {
         headers: {
           "content-type": contentType(extname(htmlFileName)) ||

@@ -126,3 +126,13 @@ React Context API is an incorrect implementation of a simple DI with prop drilli
 In apps containing 20+ dependencies to provider, the context pattern could become 20+ nested nodes.
 
 DI enables you to directly provide the service/implementation for the consumer.
+
+# deno.json
+
+Extra watch dirs
+
+Create app level deno.json and configure watching extra deps:
+
+{
+    "watch": "emeraldcss"
+}
