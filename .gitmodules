@@ -7,3 +7,6 @@
 [submodule "apps/emeraldcss"]
 	path = apps/emeraldcss
 	url = ssh://git@github.com/scriptmaster/emeraldcss
+[submodule "sergeant_create_app"]
+	path = sergeant_create_app/src
+	url = https://github.com/scriptmaster/sergeant_create_app
