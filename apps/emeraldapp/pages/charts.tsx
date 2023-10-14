@@ -4,7 +4,7 @@ import { h } from 'preact';
 import { PageProps } from "../types/page.ts";
 import AppleLayout from "../layouts/x/AppleLayout.tsx";
 
-import d3 from "d3";
+//import d3 from "d3";
 import { LineChart } from '../components/charts/LineChart.tsx';
 
 export function Charts(props: PageProps) {

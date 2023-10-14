@@ -3,16 +3,10 @@ import { Component, h } from "preact";
 import * as d3 from "d3";
 import htm from "https://esm.sh/htm@3.1.1";
 
-interface D3ChartProps {
-  data?: Array<object>;
-}
+export function LineChart({ data }) {
 
-export function LineChart(props: D3ChartProps) {
-
-  let { data } = props;
-  return <div>LineChart</div>;
-
-  /*
+    return;
+    
   if (!data) data = [
     { x: 1, y: 2 },
   ];
@@ -44,6 +38,4 @@ export function LineChart(props: D3ChartProps) {
         ref=${(g) => d3.select(g).call(d3.axisBottom(x))} />
     </svg>
     `;
-  */
- 
 }
