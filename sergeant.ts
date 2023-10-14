@@ -59,13 +59,20 @@ if (!existsSync(appsDir, { isDirectory: true })) {
     case /^serve/i.test(command):
       await serveApps(args[1] || "");
       break;
-    case /^(scaffold|create)$/i.test(command):
+    case /^(scaffold|create|new|n)$/i.test(command):
       create(args[1] || "builder", args[2] || "app_builder");
+      break;
+    case /^(ls|list)$/i.test(command):
+      const ls_remote = 'git ls-remote https://github.com/scriptmaster/sergeant_create_app';
+      const {code, stdout, stderr, error } = sh(ls_remote);
+      console.log( decode(stderr) );
       break;
     default:
       await buildApps(args[0] || "");
   }
 }
+
+function decode(ui8a: Uint8Array) { return new TextDecoder().decode(ui8a); }
 
 async function buildApps(appName = "") {
   if(appsDir == 'src') {
@@ -612,24 +619,35 @@ async function serveRefresh(appName: string, port: number) {
   });
 }
 
+function sh(execPath: string, args: string | Array<string>) {
+  try {
+    const shell = Deno.env.get('SHELL') || 'sh';
+    execPath = typeof execPath == 'undefined'? shell: (execPath == '' || execPath == 'deno'? Deno.execPath(): execPath);
+    const command = new Deno.Command(execPath || shell, {
+      args: typeof args == 'string'? args.split(' '): args,
+    });
+
+    const { code, stdout, stderr } = command.outputSync();
+    return { code, stdout: decode(stdout), stderr: decode(stderr), error: false };
+  } catch (e) {
+    console.error('sh:ERROR:', e);
+    return { code: 0, stdout: '', stderr: e.toString(), error: true }
+  }
+}
+
 function create(appType: string, appName: string) {
   //git clone branch ${appType} from https://github.com/scriptmaster/sergeant_create_app  to  appName
   console.log("Scaffolding ...");
   try {
-    const command = new Deno.Command(Deno.execPath(), {
-      args: [
-        "git",
-        "clone",
-        "--depth=1",
-        "-b",
-        `app_${appType}`,
-        "https://github.com/scriptmaster/sergeant_create_app",
-        appsDir + "/" + appName,
-      ],
-    });
-
-    const { code, stdout, stderr } = command.outputSync();
-    console.log(code, stdout, stderr);
+    const { code, stdout, stderr } = sh('git', [
+      "clone",
+      "--depth=1",
+      "-b",
+      `app_${appType}`,
+      "https://github.com/scriptmaster/sergeant_create_app",
+      appsDir + "/" + appName,
+    ]);
+    console.log(stdout, stderr);
   } catch (e) {
     console.error(e);
     scaffold(join(Deno.cwd(), "apps/app_builder"));
