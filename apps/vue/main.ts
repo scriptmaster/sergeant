@@ -1,6 +1,6 @@
 /// <reference types="./shim-vue.d.ts" />
 import { createApp } from "vue";
-import "../scss/main.scss";
+import "../emeraldcss/main.scss";
 
 import Counter from "./Counter.vue";
 import App from "./App.vue";

@@ -19,9 +19,3 @@ export default function App(props: {url?:string}) {
         <Search path="/search/:query/:advanced?" />
     </Router>;
 }
-
-// export function BrowserLayout(props: any) {
-//     return <div className="container">
-//         {props.children}
-//     </div>;
-// }

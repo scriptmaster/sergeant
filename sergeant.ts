@@ -47,10 +47,11 @@ const DEV_MODE = Deno.args.includes("--dev");
 const app = (appName: string) => join(cwd, appsDir, appName);
 const dist = (appName: string) => join(cwd, distDir, appName);
 
-if (!existsSync(appsDir, { isDirectory: true })) {
-  console.log("Looks like this is the first time you are using sergeant");
-  ensureDir(appsDir);
-  create(args[1] || "builder", args[2] || "app_builder");
+const createRegex = /^(scaffold|create|new|n)$/i;
+
+if (!existsSync(appsDir, { isDirectory: true }) && !createRegex.test(command)) {
+  console.log("No src or apps dir found, Looks like this is the first time you are using sergeant");
+  ls_remote();
 } else {
   switch (true) {
     case /^build$/i.test(command):
@@ -59,7 +60,7 @@ if (!existsSync(appsDir, { isDirectory: true })) {
     case /^serve/i.test(command):
       await serveApps(args[1] || "");
       break;
-    case /^(scaffold|create|new|n)$/i.test(command):
+    case createRegex.test(command):
       create(args[1] || "builder", args[2] || "app_builder");
       break;
     case /^(ls|list|ls-remote|ls_remote|scaffolds)$/i.test(command):
@@ -72,14 +73,28 @@ if (!existsSync(appsDir, { isDirectory: true })) {
 
 function decode(ui8a: Uint8Array) { return new TextDecoder().decode(ui8a); }
 
-function ls_remote(command?: string) {
+function list_remote_apps(command?: string): Array<string> {
   const ls_remote = 'ls-remote https://github.com/scriptmaster/sergeant_create_app';
   const {code, stdout, stderr, error } = sh('git', ls_remote);
-  // console.log( stdout );
   const ref = 'refs/heads/app_';
-  const scaffoldApps = stdout.split('\n').filter(l => l.includes(ref)).map(l => l.split(ref)[1]);
+  const scaffoldApps = stdout.split('\n').filter(l => l.includes(ref)).map(l => (l.split(ref)[1] || '').toLowerCase());
+  return scaffoldApps;
+}
+
+function ls_remote(command?: string): Array<string> {
   console.log('Available scaffolds:');
-  scaffoldApps.map(s => console.log('\tsergeant create', s, 'app_'+s));
+  const scaffoldApps = list_remote_apps(command);
+  scaffoldApps.map(s => console.log('\tsergeant create', s, 'my_'+s+'_app'));
+
+  const builderApp =  (prompt('Create a builder app? [y/N/scaffoldName]', 'N') || 'N').toLowerCase();
+  if (builderApp == 'y') {
+    ensureDir(appsDir);
+    create(args[1] || "builder", args[2] || 'my_builder_app');
+  } else if (builderApp.length > 1 && scaffoldApps.includes(builderApp)) {
+    create(builderApp, 'my_' + builderApp + '_app');
+  }
+
+  return scaffoldApps;
 }
 
 async function buildApps(appName = "") {
@@ -580,7 +595,7 @@ async function serveRefresh(appName: string, port: number) {
   await buildApp(appName);
   watchForBuild(appName);
 
-  serve(async (req) => {
+  const tryServe = (port: number) => Deno.serve({port}, async (req) => {
     const res = middleware(req);
     if (res) {
       return res;
@@ -622,9 +637,18 @@ async function serveRefresh(appName: string, port: number) {
         },
       },
     );
-  }, {
-    port,
   });
+
+  while(true) {
+    try { tryServe(port); break; } catch(e) {
+      if (e.toString().includes('Address already in use')) {
+        port += 50;
+      } else {
+        console.error(e.toString(), e);
+      }
+    }
+  }
+
 }
 
 function sh(execPath: string, args: string | Array<string>) {
@@ -643,9 +667,11 @@ function sh(execPath: string, args: string | Array<string>) {
   }
 }
 
-function create(appType: string, appName: string) {
+function create(appType: string, appName?: string) {
   //git clone branch ${appType} from https://github.com/scriptmaster/sergeant_create_app  to  appName
-  console.log("Scaffolding ...");
+  console.log("Scaffolding ...", appType, appName);
+
+  if(!appName) appName = 'app_' + appType;
   try {
     const { code, stdout, stderr } = sh('git', [
       "clone",
@@ -658,7 +684,7 @@ function create(appType: string, appName: string) {
     console.log(stdout, stderr);
   } catch (e) {
     console.error(e);
-    scaffold(join(Deno.cwd(), "apps/app_builder"));
+    // scaffold(join(Deno.cwd(), "apps/app_builder"));
   }
 }
 

@@ -6,7 +6,7 @@ import { store } from './app/store.ts';
 
 import App from './App.tsx';
 //import "../../vendor/github.com/primer-css/src/core/index.scss"
-import "../scss/main.scss";
+import "../emeraldcss/main.scss";
 
 // ReactDOM.render(
 //     <App />
