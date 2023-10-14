@@ -62,10 +62,8 @@ if (!existsSync(appsDir, { isDirectory: true })) {
     case /^(scaffold|create|new|n)$/i.test(command):
       create(args[1] || "builder", args[2] || "app_builder");
       break;
-    case /^(ls|list)$/i.test(command):
-      const ls_remote = 'git ls-remote https://github.com/scriptmaster/sergeant_create_app';
-      const {code, stdout, stderr, error } = sh(ls_remote);
-      console.log( decode(stderr) );
+    case /^(ls|list|ls-remote|ls_remote|scaffolds)$/i.test(command):
+      ls_remote(command);
       break;
     default:
       await buildApps(args[0] || "");
@@ -73,6 +71,16 @@ if (!existsSync(appsDir, { isDirectory: true })) {
 }
 
 function decode(ui8a: Uint8Array) { return new TextDecoder().decode(ui8a); }
+
+function ls_remote(command?: string) {
+  const ls_remote = 'ls-remote https://github.com/scriptmaster/sergeant_create_app';
+  const {code, stdout, stderr, error } = sh('git', ls_remote);
+  // console.log( stdout );
+  const ref = 'refs/heads/app_';
+  const scaffoldApps = stdout.split('\n').filter(l => l.includes(ref)).map(l => l.split(ref)[1]);
+  console.log('Available scaffolds:');
+  scaffoldApps.map(s => console.log('\tsergeant create', s, 'app_'+s));
+}
 
 async function buildApps(appName = "") {
   if(appsDir == 'src') {
