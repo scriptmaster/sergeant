@@ -15,7 +15,7 @@ import React from 'react';
 import ioc from "./ioc.ts";
 
 import App from './App.tsx';
-import "../scss/main.scss";
+import "../emeraldcss/main.scss";
 
 // ioc.use('t', TranslationProvider);
 // ioc.use('userService', UserService);
