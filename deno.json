@@ -9,7 +9,8 @@
         "react-redux": "./vendor/github.com/react-redux/src/index.ts",
         "vue": "https://esm.sh/vue@3.3.4",
         "d3": "https://esm.sh/d3@7.8.5",
-        "emeraldcss": "https://esm.sh/emeraldcss"
+        "emeraldcss": "https://unpkg.com/emeraldcss@1.0.1",
+        "emeraldcss/": "https://unpkg.com/emeraldcss@1.0.1/"
     },
     "compilerOptions": {
         "jsx": "react-jsx"
