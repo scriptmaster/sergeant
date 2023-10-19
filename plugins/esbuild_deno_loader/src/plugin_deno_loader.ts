@@ -313,8 +313,8 @@ export function denoLoaderPlugin(
           const contents = await getLocalOrRemoteFileContents(args);
           if(/\.scss$/.test(args.path)) {
             if (Deno.env.get('LOG')=='DEBUG') console.log('SCSS Loader:', args.path);
-            // const css = sass(contents, { load_paths: [dirname(args.path)] }).to_string("compressed")
-            const css = sass(contents).to_string("compressed")
+            const css = sass(contents, { load_paths: [dirname(args.path)] }).to_string("compressed")
+            // const css = sass(contents).to_string("compressed")
             return { loader: 'css', contents: css.toString() }
           }
           return { loader: 'css', contents };
@@ -370,7 +370,7 @@ async function getLocalOrRemoteFileContents(args: esbuild.OnLoadArgs) {
     return await Deno.readTextFile(args.path);
   } else if (args.namespace == 'https' || args.namespace == 'http') {
     const url = fixPrefixNamespacePath(args.namespace, args.path);
-    //console.log(yellow('Downloading:'), url);
+    console.log(yellow('Downloading:'), url);
     const res = await fetch(url);
     if (res.status != 200) return '';
     return await res.text();

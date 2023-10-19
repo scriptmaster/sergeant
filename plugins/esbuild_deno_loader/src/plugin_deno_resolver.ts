@@ -125,7 +125,15 @@ export function denoResolverPlugin(
             return { path: join(args.resolveDir, args.path) }
           } else if (args.namespace=='https' || args.namespace=='http') {
             // is css ?
-            if (/\.css$/.test(args.path)) {
+            if (/\.s?css$/.test(args.path)) {
+              if (LOG_DEBUG) console.log('return css as resolved', args.path, args.namespace, args.importer);
+              if (args.importer && args.importer.startsWith('//') && !args.path.startsWith('//')) {
+                const fromImportedPath = new URL(fixPrefixNamespacePath(args.namespace, args.path),
+                  fixPrefixNamespacePath(args.namespace, args.importer)).toString();
+                console.log('====fromImportedPath', fromImportedPath);
+
+                return { path: fromImportedPath, namespace: args.namespace };
+              }
               return { path: args.path, namespace: args.namespace };
             } else if (/\.(woff|woff2|eot|otf|ttf|svg|png|jpe?g)$/.test(args.path)) {
               if (args.importer.endsWith('.css')) {
@@ -172,7 +180,7 @@ export function denoResolverPlugin(
           referrer = new URL(`${toFileUrl(args.resolveDir).href}/`);
         } else {
           // ???
-          //console.log('??? undefined ???')
+          if (LOG_DEBUG) console.log('??? undefined ???')
           return undefined;
         }
 
@@ -248,11 +256,28 @@ export function denoResolverPlugin(
         // pass. Now plugins can perform any resolution they want on the fully
         // resolved specifier.
         const { path, namespace } = urlToEsbuildResolution(resolved);
-        //console.log('====@build.resolve(path', path, namespace, args.kind);
+        if (LOG_DEBUG) console.log('====@build.resolve(path', path, namespace, args.kind);
         const res = await build.resolve(path, {
           namespace,
           kind: args.kind,
         });
+
+
+        if (res.errors.length) {
+          if (LOG_DEBUG) console.log('======ERROR RESOLVING========', res);
+          // WE HAVE ERROR!!!
+          //   Error: Expected a JavaScript or TypeScript module, but identified a Unknown module. Importing these types of modules is currently not supported.
+          // Can we simple choose between external versus raw loader??
+          const specRgx = /Specifier: (.+)/;
+          const specifier = res.errors.filter(err => err.text.includes('Unknown module') && specRgx.test(err.text))
+            .map(e => (e.text.match(specRgx) || ['', ''])[1])[0];
+            //.filter(e => e != null)[0];
+          if (specifier) {
+            return { path: specifier, namespace: specifier.includes(':')? specifier.split(':')[0]: 'file' };
+          }
+          // console.log('=====a', error, '=====b', res.errors[0], '=====c', error.detail, '=====d', error.specifier ?? '', '=====e', error.detail.specifier ?? '', '======f');
+        }
+
         if (res.pluginData === IN_NODE_MODULES) nodeModulesPaths.add(res.path);
         return res;
       });
