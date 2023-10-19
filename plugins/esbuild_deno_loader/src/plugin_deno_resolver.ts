@@ -120,8 +120,7 @@ export function denoResolverPlugin(
         if (/\./.test(args.path) && !/\.(js|jsx|ts|tsx|mjs|cjs)$/.test(args.path) && !/\:/.test(args.path)) {
 
           if (args.namespace=='file') {
-            // if (Deno.env.get('LOG')=='DEBUG') 
-            console.log('TO FILE resolver:', args.path, args.namespace);
+            if (Deno.env.get('LOG')=='DEBUG') console.log('TO FILE resolver:', args.path, args.namespace);
             return { path: join(args.resolveDir, args.path) }
           } else if (args.namespace=='https' || args.namespace=='http') {
             // is css ?
