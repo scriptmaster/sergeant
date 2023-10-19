@@ -42,7 +42,7 @@ import { brightGreen } from "https://deno.land/std@0.200.0/fmt/colors.ts";
 const args = Deno.args;
 
 if(!args[0] || !existsSync(args[0])) {
-    throw new Error('Require file name. Usage: usemind index.html');
+    throw new Error('Require file name. Usage: usemin index.html');
 }
 
 const cwd = Deno.cwd();

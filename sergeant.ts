@@ -57,8 +57,11 @@ if (!existsSync(appsDir, { isDirectory: true }) && !createRegex.test(command)) {
     case /^build$/i.test(command):
       await buildApps(args[1] || "");
       break;
-    case /^serve/i.test(command):
+    case /^server?$/i.test(command):
       await serveApps(args[1] || "");
+      break;
+    case /^map$/i.test(command):
+      await chooseAppForMap(args[1] || "");
       break;
     case createRegex.test(command):
       create(args[1] || "builder", args[2] || "app_builder");
@@ -126,6 +129,10 @@ async function serveApps(appName: string) {
       return console.log("No such app: ", app(appName));
     }
     return await serveRefresh(appName, portRangeStart);
+  } else if (appsDir == "src") {
+    console.log('Serving .');
+    await serveRefresh('.', portRangeStart);
+    return;
   }
 
   console.log("Serving all apps...");
@@ -142,16 +149,54 @@ async function serveApps(appName: string) {
   console.log(servers, brightGreen("servers started"));
 }
 
+/*
+function chooseAppForMap(appName: string) {
+  // mapApp();
+  // correct existing map
+  // install new map
+  // trailing slash support &prod/
+  // choose name and version and correct subpath
+  // choose ?prod ?dts ?dev versions ?bundle ?deps= ?exports= ?alias=
+  // choose unpkg.com esm.run cdnjs + related deps like esm.sh
+  // can we have a web interface for this?
+  // ?deno-std=
+}
+*/
+
 interface DenoPluginOpts {
-  configPath?: string
-  context?: object
+  configPath?: string;
+  context?: object;
+  importMapURL?: string;
 }
 
-
+function getDenoImportsLockFile(appDir: string) {
+  const denoImportsLockJson = Deno.env.get('DENO_IMPORT_JSON') || Deno.env.get('DENO_IMPORT_LOCK_JSON') || "deno.imports.lock.json";
+  const denoImportsJson = "deno.imports.json";
+  const importMap = "importmap.json";
+  const import_map = "import_map.json";
+  if (existsSync(join(appDir, denoImportsLockJson))) {
+    return join(appDir, denoImportsLockJson);
+  } else if (existsSync(join(cwd, denoImportsLockJson))) {
+    return join(cwd, denoImportsLockJson);
+  } else if (existsSync(join(appDir, denoImportsJson))) {
+    return join(cwd, denoImportsJson);
+  } else if (existsSync(join(cwd, denoImportsJson))) {
+    return join(cwd, denoImportsJson);
+  } else if (existsSync(join(appDir, importMap))) {
+    return join(cwd, importMap);
+  } else if (existsSync(join(cwd, importMap))) {
+    return join(cwd, importMap);
+  } else if (existsSync(join(appDir, import_map))) {
+    return join(cwd, import_map);
+  } else if (existsSync(join(cwd, import_map))) {
+    return join(cwd, import_map);
+  }
+}
 
 function getDenoJsonFile(appDir: string) {
   const denoJson = Deno.env.get('DENO_JSON') ?? "deno.json";
   const denoJsonFile = join(appDir, denoJson);
+  // deno.imports.lock.json
   // // //
   if (existsSync(denoJsonFile)) {
     return denoJsonFile;
@@ -187,6 +232,13 @@ async function buildApp(appName: string) {
 
   const denoJsonFile = getDenoJsonFile(appDir);
   if (denoJsonFile) denoPluginOpts.configPath = denoJsonFile;
+
+  // deno.imports.lock.json
+  const denoImportsLockFile = getDenoImportsLockFile(appDir);
+  if (denoImportsLockFile) {
+    console.log(yellow("import map:"), denoImportsLockFile);
+    denoPluginOpts.importMapURL = 'file://'+denoImportsLockFile;
+  }
 
   const entryPoints = [];
   entryPoints.push(mainEntry);
@@ -237,34 +289,35 @@ async function buildApp(appName: string) {
   const plugins = getPlugins(denoPluginOpts);
   esopts.plugins = plugins;
 
-  let result = { errors: [] };
   try {
-    result = await esbuild.build(esopts);
+    const buildResult = await esbuild.build(esopts as esbuild.BuildOptions);
+    // let result: esbuild.BuildResult<esbuild.BuildOptions> = { errors: [], warnings: [], cout };
+
+    const publicDir = join(appDir, "public");
+    if (existsSync(publicDir)) copyFiles(publicDir, dist(appName));
+
+    const printOutSize = (file = "") => {
+      if (!existsSync(file)) return;
+
+      const sz = Deno.statSync(file).size;
+      console.log(
+        file,
+        sz < 2048
+          ? yellow(sz + "") + " bytes"
+          : yellow((Math.ceil(sz / 10) / 100) + "") + " KB",
+        buildResult.errors && buildResult.errors.length ? "Errors: " + buildResult.errors : "",
+      );
+    };
+    printOutSize(outfile);
+    printOutSize(outfile2);
+
   } catch (e) {
     console.error(e);
   }
 
-  const publicDir = join(appDir, "public");
-  if (existsSync(publicDir)) copyFiles(publicDir, dist(appName));
-
-  const printOutSize = (file = "") => {
-    if (!existsSync(file)) return;
-
-    const sz = Deno.statSync(file).size;
-    console.log(
-      file,
-      sz < 2048
-        ? yellow(sz + "") + " bytes"
-        : yellow((Math.ceil(sz / 10) / 100) + "") + " KB",
-      result.errors && result.errors.length ? "Errors: " + result.errors : "",
-    );
-  };
-  printOutSize(outfile);
-  printOutSize(outfile2);
-
   try {
-    const result = await staticRender(appName, esopts, denoPluginOpts);
-    if (result) {
+    const staticResult = await staticRender(appName, esopts, denoPluginOpts);
+    if (staticResult) {
       const staticDir = join(dist(appName), 'static');
       const copyStaticFile = (file: string) => { if (existsSync(file)) Deno.copyFileSync(file, join(staticDir, basename(file))); }
 
@@ -340,23 +393,18 @@ async function staticRender(appName: string, esopts: any, denoPluginOpts: DenoPl
     }
   });
 
-  let result: {
-    outputFiles?: [{text: ''}]
-  } = {};
+  // let result: {
+  //   outputFiles?: [{text: ''}]
+  // } = {};
 
   try {
-    result = await esbuild.build(staticOpts);
-  } catch(e) {
-    console.error(e);
-  }
+    const result = await esbuild.build(staticOpts);
 
-  if (result && result.outputFiles && result.outputFiles[0] && result.outputFiles[0].text) {
-    // the entire bundle is available here:
-    const text = result.outputFiles[0].text;
+    if (result && result.outputFiles && result.outputFiles[0] && result.outputFiles[0].text) {
+      // the entire bundle is available here:
+      const text = result.outputFiles[0].text;
 
-    //console.log(text);
-
-    try {
+      //console.log(text);
       const ssg = await importString(text);
       if (ssg) {
         const routeFn = ssg.renderRoutes || ssg.renderToString || ssg.renderToStatickMarkup || ssg.render;
@@ -371,12 +419,13 @@ async function staticRender(appName: string, esopts: any, denoPluginOpts: DenoPl
 
         await renderOutput(staticDir, routesJson.routes, routeFn, shellFn, appDir);
       }
-    } catch(e) {
-      console.log(e);
     }
+
+    return result;
+  } catch(e) {
+    console.log(e);
   }
 
-  return result;
 }
 
 type ReturningArrayFunc<T> = (o: T[]) => T[]

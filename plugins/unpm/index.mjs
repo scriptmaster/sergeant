@@ -217,7 +217,7 @@ function updatePackageJson(name, version) {
 
 function installBinaries(name, version) {
   const rootDir = '.';
-  const entries = Store.get('node_modules/.bin/' + name);
+  const entries = Store.get('node_modules/.bin/' + name) || [];
   // console.log('Install binaries: ', path.join(rootDir, 'node_modules/.bin/', name), entries);
   entries.forEach((v, i) => {
     const binPath = path.join(rootDir, 'node_modules/.bin/');

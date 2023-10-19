@@ -12,6 +12,8 @@ import {
 } from "../deps.ts";
 import { readDenoConfig, urlToEsbuildResolution } from "./shared.ts";
 import { existsSync } from "https://deno.land/std@0.83.0/fs/exists.ts";
+import { stripTrailingSeparators } from "https://deno.land/std@0.200.0/path/_util.ts";
+import { basename } from "https://deno.land/std@0.173.0/path/win32.ts";
 
 export type { ImportMap, Scopes, SpecifierMap };
 
@@ -34,6 +36,8 @@ export interface DenoResolverPluginOptions {
 
 export const IN_NODE_MODULES = Symbol("IN_NODE_MODULES");
 export const IN_NODE_MODULES_RESOLVED = Symbol("IN_NODE_MODULES_RESOLVED");
+
+const LOG_DEBUG = Deno.env.get('LOG') == 'DEBUG';
 
 /**
  * The Deno resolver plugin performs relative->absolute specifier resolution
@@ -88,6 +92,10 @@ export function denoResolverPlugin(
           const data = await resp.json();
           importMap = resolveImportMap(data, new URL(resp.url));
         }
+
+        if (LOG_DEBUG) {
+          console.log('importMap: ', importMap);
+        }
       });
 
       build.onResolve({ filter: /.*/ }, async function onResolve(args) {
@@ -109,11 +117,42 @@ export function denoResolverPlugin(
           return res;
         }
 
-        if (args.namespace=='file' && /\./.test(args.path) && !/\.(js|jsx|ts|tsx|mjs|cjs)$/.test(args.path) && !/\:/.test(args.path)) {
-          if (Deno.env.get('LOG')=='DEBUG') console.log('TO FILE resolver:', args.path, args.namespace);
-          return { path: join(args.resolveDir, args.path) }
+        if (/\./.test(args.path) && !/\.(js|jsx|ts|tsx|mjs|cjs)$/.test(args.path) && !/\:/.test(args.path)) {
+
+          if (args.namespace=='file') {
+            // if (Deno.env.get('LOG')=='DEBUG') 
+            console.log('TO FILE resolver:', args.path, args.namespace);
+            return { path: join(args.resolveDir, args.path) }
+          } else if (args.namespace=='https' || args.namespace=='http') {
+            // is css ?
+            if (/\.css$/.test(args.path)) {
+              return { path: args.path, namespace: args.namespace };
+            } else if (/\.(woff|woff2|eot|otf|ttf|svg|png|jpe?g)$/.test(args.path)) {
+              if (args.importer.endsWith('.css')) {
+                if (LOG_DEBUG) console.log('=====css :external:', args.importer);
+                return { path: args.path, namespace: args.namespace, external: true };
+              }
+              console.log('======= args.importer:', args.importer, basename(args.importer));
+
+              const fromImportedPath = new URL(fixPrefixNamespacePath(args.namespace, args.path),
+                fixPrefixNamespacePath(args.namespace, args.importer)).toString();
+              console.log('====fromImportedPath', fromImportedPath);
+
+              return { path: fromImportedPath, namespace: args.namespace };
+            } else {
+              if (args.importer.endsWith('.css')) {
+                return { path: args.path, namespace: args.namespace, external: true };
+              }
+              //console.log('===========https://  .raw', args.path, args.namespace);
+              //return { path: args.namespace + ':' + args.path, namespace: 'http-url-raw' };
+            }
+          }
         }
         if (Deno.env.get('LOG')=='DEBUG') console.log('TO ESM resolver:', args.path, args.namespace);
+        // WHATS ESM resolver? 
+        /*
+          sends to esm.sh and also to esbuild resolution
+        */
 
         // The first pass resolver performs synchronous resolution. This
         // includes relative to absolute specifier resolution and import map
@@ -132,13 +171,18 @@ export function denoResolverPlugin(
         } else if (args.resolveDir !== "") {
           referrer = new URL(`${toFileUrl(args.resolveDir).href}/`);
         } else {
+          // ???
+          //console.log('??? undefined ???')
           return undefined;
         }
+
+        //console.log('referrer set:', referrer.href);
 
         // We can then resolve the specifier relative to the referrer URL. If
         // an import map is specified, we use that to resolve the specifier.
         let resolved: URL;
         if (importMap !== null) {
+          if (LOG_DEBUG) console.log('RESOLVING WITH IMPORTMAP', args.path);
 
           if (referrer.protocol == 'file:' && !(/https?\:/.test(args.path)) && !/[\/\.]/.test(args.path[0]) &&
                   !existsSync(args.path) && importMap.imports && !importMap.imports[args.path]) {
@@ -168,13 +212,19 @@ export function denoResolverPlugin(
               const defaultCdn = 'https://esm.sh';
               const getCdnUrl = (importMap: ImportMap) => (importMap?.imports? importMap?.imports['cdnurl'] ?? defaultCdn: defaultCdn);
               const mappedUrl = getCdnUrl(importMap) + (args.path[0] == '/'? '': '/') + args.path;
-  
-              importMap.imports[args.path] = mappedUrl;
-  
+
+              const stripTrailingSlashes = (s: string) => stripTrailingSeparators(s, c => c == '/'.charCodeAt(0));
+
+              const aPath = stripTrailingSlashes(args.path);
+              const mappedUrl2 = stripTrailingSlashes(mappedUrl);
+
+              importMap.imports[aPath] = mappedUrl2;
+              importMap.imports[aPath + '/'] = mappedUrl2 + '/';
+
               Deno.writeTextFileSync("deno.imports.lock.json", JSON.stringify({
                 "imports": importMap.imports
               }, null, 2));
-  
+
               console.log(green('mapped:'), yellow(args.path), '=', green(mappedUrl));
             } else {
               // console.log(red('bare file: specifier unresolved'), args.path, args, referrer);
@@ -193,10 +243,12 @@ export function denoResolverPlugin(
           resolved = new URL(args.path, referrer);
         }
 
+        //console.log('====@urlToEsbuildResolution(resolved', resolved);
         // Now pass the resolved specifier back into the resolver, for a second
         // pass. Now plugins can perform any resolution they want on the fully
         // resolved specifier.
         const { path, namespace } = urlToEsbuildResolution(resolved);
+        //console.log('====@build.resolve(path', path, namespace, args.kind);
         const res = await build.resolve(path, {
           namespace,
           kind: args.kind,
@@ -204,6 +256,11 @@ export function denoResolverPlugin(
         if (res.pluginData === IN_NODE_MODULES) nodeModulesPaths.add(res.path);
         return res;
       });
+
     },
   };
+}
+
+function fixPrefixNamespacePath(namespace: string, path: string) {
+  return path.startsWith('//')? namespace + ':' + path: path;
 }

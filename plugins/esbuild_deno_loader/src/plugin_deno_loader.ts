@@ -11,6 +11,7 @@ import {
   Loader,
   urlToEsbuildResolution,
 } from "./shared.ts";
+import { yellow } from "https://deno.land/std@0.140.0/fmt/colors.ts";
 
 export interface DenoLoaderPluginOptions {
   /**
@@ -180,6 +181,8 @@ export function denoLoaderPlugin(
       async function onResolve(
         args: esbuild.OnResolveArgs,
       ): Promise<esbuild.OnResolveResult | null | undefined> {
+        //console.log('====loader:onResolve', args.path);
+
         if (args.namespace === "file" && args.pluginData === IN_NODE_MODULES) {
           if (nodeModulesDir) {
             const result = await build.resolve(args.path, {
@@ -245,6 +248,7 @@ export function denoLoaderPlugin(
             );
           }
         }
+
         const specifier = esbuildResolutionToURL(args);
 
         // Once we have an absolute path, let the loader resolver figure out
@@ -297,6 +301,8 @@ export function denoLoaderPlugin(
       async function onLoad(
         args: esbuild.OnLoadArgs,
       ): Promise<esbuild.OnLoadResult | null> {
+        //if (/\.css$/.test(args.path))
+        //console.log('======== onLoad ======', args);// return { loader: 'file', contents: '' };
         if (args.namespace === "file" && args.pluginData === IN_NODE_MODULES) {
           const contents = await Deno.readFile(args.path);
           return { loader: "js", contents };
@@ -304,10 +310,11 @@ export function denoLoaderPlugin(
         if (Deno.env.get('LOG')=='DEBUG') console.log('Loader::', args.path, args.namespace, !/(\.(tsx|ts|jsx|js)?)$/.test(args.path));
         if(/\.s?css$/.test(args.path)) {
           if (Deno.env.get('LOG')=='DEBUG') console.log('CSS Loader:', args.path);
-          const contents = await Deno.readTextFile(args.path);
+          const contents = await getLocalOrRemoteFileContents(args);
           if(/\.scss$/.test(args.path)) {
             if (Deno.env.get('LOG')=='DEBUG') console.log('SCSS Loader:', args.path);
-            const css = sass(contents, { load_paths: [dirname(args.path)] }).to_string("compressed")
+            // const css = sass(contents, { load_paths: [dirname(args.path)] }).to_string("compressed")
+            const css = sass(contents).to_string("compressed")
             return { loader: 'css', contents: css.toString() }
           }
           return { loader: 'css', contents };
@@ -351,6 +358,25 @@ export function denoLoaderPlugin(
       build.onLoad({ filter: /.*/, namespace: "data" }, onLoad);
     },
   };
+}
+
+
+function fixPrefixNamespacePath(namespace: string, path: string) {
+  return path.startsWith('//')? namespace + ':' + path: path;
+}
+
+async function getLocalOrRemoteFileContents(args: esbuild.OnLoadArgs) {
+  if (args.namespace == 'file') {
+    return await Deno.readTextFile(args.path);
+  } else if (args.namespace == 'https' || args.namespace == 'http') {
+    const url = fixPrefixNamespacePath(args.namespace, args.path);
+    //console.log(yellow('Downloading:'), url);
+    const res = await fetch(url);
+    if (res.status != 200) return '';
+    return await res.text();
+  } else {
+    return '';
+  }
 }
 
 //@ts-ignore args can be any given to console
