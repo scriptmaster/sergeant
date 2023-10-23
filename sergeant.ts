@@ -61,7 +61,8 @@ if (!existsSync(appsDir, { isDirectory: true }) && !createRegex.test(command)) {
       await serveApps(args[1] || "");
       break;
     case /^map$/i.test(command):
-      await chooseAppForMap(args[1] || "");
+      //trex is not working, error: file
+      //await chooseAppForMap(args[1] || "");
       break;
     case createRegex.test(command):
       create(args[1] || "builder", args[2] || "app_builder");
@@ -245,6 +246,13 @@ async function buildApp(appName: string) {
 
   const p: esbuild.Plugin[] = [];
 
+  const defaultTsConfigRaw = JSON.stringify({
+    compilerOptions: {
+      "emitDecoratorMetadata": true,
+      "experimentalDecorators": true
+    }
+  });
+
   const esopts = {
     plugins: p,
     entryPoints,
@@ -259,6 +267,7 @@ async function buildApp(appName: string) {
     minify: !DEV_MODE,
     jsxFactory: "React.createElement",
     jsxFragment: "React.Fragment",
+    tsconfigRaw: defaultTsConfigRaw,
   };
 
   if (denoPluginOpts.configPath) {
@@ -267,6 +276,7 @@ async function buildApp(appName: string) {
       const jsonConfig = JSON.parse(text);
       if (jsonConfig && jsonConfig.compilerOptions) {
         const co = jsonConfig.compilerOptions;
+        esopts.tsconfigRaw = JSON.stringify({ compilerOptions: co });
         if (co.jsx == "preact") {
           esopts.jsxFactory = "h";
           esopts.jsxFragment = "Fragment";
