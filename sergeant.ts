@@ -26,6 +26,7 @@ import { refresh } from "https://deno.land/x/refresh@1.0.0/mod.ts";
 import { serve } from "https://deno.land/std@0.200.0/http/server.ts";
 import { contentType } from "https://deno.land/std@0.201.0/media_types/content_type.ts";
 import { importString } from './plugins/import/mod.ts';
+import { green } from "https://deno.land/std@0.140.0/fmt/colors.ts";
 //import type { Dictionary } from 'https://deno.land/x/ts_essentials/mod.ts'
 
 // To get started:
@@ -33,7 +34,7 @@ import { importString } from './plugins/import/mod.ts';
 
 const portRangeStart = 3000;
 
-printASCII();
+printASCII('v1.0.2');
 
 const cwd = Deno.cwd();
 
@@ -71,7 +72,7 @@ if (!existsSync(appsDir, { isDirectory: true }) && !createRegex.test(command)) {
       ls_remote(command);
       break;
     case /^(update|up|upgrade)$/i.test(command):
-      sh('deno', 'install -A -f https://denopkg.com/scriptmaster/sergeant/sergeant.ts');
+      sh('deno', 'install -A -f -n sergeant https://denopkg.com/scriptmaster/sergeant/sergeant.ts');
       break;
     default:
       await buildApps(args[0] || "");
@@ -756,9 +757,10 @@ render(<App />, document.body);`;
   Deno.writeTextFileSync(join(dir, "main.tsx"), mainFileContents);
 }
 
-function printASCII() {
+function printASCII(version = 'v1.0.0') {
   console.log(
     "✨ Sergeant 🫡     ",
+    green(version), '     ',
     "A front-end microservices framework!",
     "\n",
     cyan(
