@@ -136,3 +136,18 @@ Create app level deno.json and configure watching extra deps:
 {
     "watch": "emeraldcss"
 }
+
+
+# denopkg.com
+
+To use GitHub as a package registry for Deno, you only need to replace github.com with denopkg.com like this:
+https://denopkg.com/user/repo or repo@tag/path/to/file
+
+Example:
+
+import { opn } from 'https://denopkg.com/hashrock/deno-opn/opn.ts'
+opn('https://denopkg.com')
+
+# web framework
+
+https://alosaur.com/docs/intro

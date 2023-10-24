@@ -70,6 +70,9 @@ if (!existsSync(appsDir, { isDirectory: true }) && !createRegex.test(command)) {
     case /^(ls|list|ls-remote|ls_remote|scaffolds)$/i.test(command):
       ls_remote(command);
       break;
+    case /^(update|up|upgrade)$/i.test(command):
+      sh('deno', 'install -A -f https://denopkg.com/scriptmaster/sergeant/sergeant.ts');
+      break;
     default:
       await buildApps(args[0] || "");
   }
@@ -272,8 +275,7 @@ async function buildApp(appName: string) {
 
   if (denoPluginOpts.configPath) {
     try {
-      const text = Deno.readTextFileSync(denoPluginOpts.configPath);
-      const jsonConfig = JSON.parse(text);
+      const jsonConfig = json_parse(denoPluginOpts.configPath);
       if (jsonConfig && jsonConfig.compilerOptions) {
         const co = jsonConfig.compilerOptions;
         esopts.tsconfigRaw = JSON.stringify({ compilerOptions: co });
@@ -589,7 +591,7 @@ async function watchForBuild(appName: string) {
 function json_parse(filepath: string) {
   try {
     return JSON.parse(Deno.readTextFileSync(filepath));
-  } catch(e) { console.error('Error in json_parse', e); }
+  } catch(e) { console.error('Ignoring: warn: json_parse', e); }
 }
 
 function getExtraWatcheDirs(appDir: string) {
