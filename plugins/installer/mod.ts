@@ -83,6 +83,9 @@ export function install(arg1: string, version = "") {
     case "build-essentials":
       tool('build-essentials');
       break;
+    case "nessie":
+      shell('deno', 'install -f -A -n nessie https://deno.land/x/nessie/cli.ts');
+      break;
     case "emeraldcss":
     case "emerald":
       console.log("emeraldcss");
@@ -226,7 +229,7 @@ export function source() {
 export function alias() {
   console.log(green('aliasing'));
   const aliasMap: {[k: string]: string} = {
-    'sir': "'$(which sir)'",
+    'sir': "$(which sergeant)",
     'alo': "'alosaur'",
   };
   const a = args[2] || 'sir';

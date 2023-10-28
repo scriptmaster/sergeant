@@ -34,7 +34,7 @@ import { alias, certbot, install, nginx, service, sh, shell, source, todo, updat
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.0.43';
+const VERSION = 'v1.0.44';
 
 const ESBUILD_MODE = Deno.env.get('ESBUILD_PLATFORM') || Deno.env.get('ESBUILD_MODE') || 'neutral';
 const ESBUILD_FORMAT = Deno.env.get('ESBUILD_FORMAT') || 'esm';
@@ -56,7 +56,8 @@ const dist = (appName: string) => join(cwd, distDir, appName);
 
 if (!command && !existsSync(appsDir, { isDirectory: true })) {
   console.log("No src or apps dir found. Create App scaffolds available.");
-  ls_remote();
+  lsRemoteScaffolds();
+  versionCheck();
 } else {
   switch (true) {
     case /^build$/i.test(command):
@@ -73,7 +74,7 @@ if (!command && !existsSync(appsDir, { isDirectory: true })) {
       create(args[1] || "builder", args[2] || "app_builder");
       break;
     case /^(ls|list|ls-remote|ls_remote|scaffolds)$/i.test(command):
-      ls_remote(command);
+      lsRemoteScaffolds(command);
       break;
     case /^(install|i)$/i.test(command):
       install(args[1], args[2] || '');
@@ -104,6 +105,7 @@ if (!command && !existsSync(appsDir, { isDirectory: true })) {
       break;
     case /^(version|-v|--version|-version|v|info|about|-info|--info)$/i.test(command):
       console.log(green(VERSION));
+      versionCheck();
       break;
     default:
       console.log(gray('>'), command || '');
@@ -122,7 +124,7 @@ function list_remote_apps(command?: string): Array<string> {
   return scaffoldApps;
 }
 
-function ls_remote(command?: string): Array<string> {
+function lsRemoteScaffolds(command?: string): Array<string> {
   console.log('Available scaffolds:');
   const scaffoldApps = list_remote_apps(command);
   scaffoldApps.map(s => console.log('\tsergeant create', s, 'my_'+s+'_app'));
@@ -136,6 +138,19 @@ function ls_remote(command?: string): Array<string> {
   }
 
   return scaffoldApps;
+}
+
+function versionCheck() {
+  fetch('https://raw.githubusercontent.com/scriptmaster/sergeant/master/CLI_ANNOUNCE.md').then((o) => {
+    // console.log(o.split('\n'));
+    if(o.ok) {
+      o.text().then(t => {
+        const firstLine = t.split('\n')[0];
+        console.log(firstLine); // print the first line
+        console.log(`\nTo pull this version do: sergeant up\n`); //
+      })
+    }
+  })
 }
 
 async function buildApps(appName = "") {
