@@ -26,7 +26,7 @@ import { contentType } from "https://deno.land/std@0.201.0/media_types/content_t
 import { importString } from './plugins/import/mod.ts';
 
 //import dynamicImportPlugin from 'https://esm.sh/esbuild-dynamic-import-plugin';
-import { alias, install, nginx, service, sh, shell, source, todo, update, upgrade } from "./plugins/installer/mod.ts";
+import { alias, certbot, install, nginx, service, sh, shell, source, todo, update, upgrade } from "./plugins/installer/mod.ts";
 
 //import type { Dictionary } from 'https://deno.land/x/ts_essentials/mod.ts'
 
@@ -34,7 +34,7 @@ import { alias, install, nginx, service, sh, shell, source, todo, update, upgrad
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.0.40';
+const VERSION = 'v1.0.43';
 
 const ESBUILD_MODE = Deno.env.get('ESBUILD_PLATFORM') || Deno.env.get('ESBUILD_MODE') || 'neutral';
 const ESBUILD_FORMAT = Deno.env.get('ESBUILD_FORMAT') || 'esm';
@@ -54,12 +54,8 @@ const command = args[0];
 const app = (appName: string) => join(cwd, appsDir, appName);
 const dist = (appName: string) => join(cwd, distDir, appName);
 
-const createRegex = /^(scaffold|create|new|n)$/i;
-
-const HOME = Deno.env.get('HOME') || '';
-
-if (!existsSync(appsDir, { isDirectory: true }) && !createRegex.test(command)) {
-  console.log("No src or apps dir found, Looks like this is the first time you are using sergeant");
+if (!command && !existsSync(appsDir, { isDirectory: true })) {
+  console.log("No src or apps dir found. Create App scaffolds available.");
   ls_remote();
 } else {
   switch (true) {
@@ -73,7 +69,7 @@ if (!existsSync(appsDir, { isDirectory: true }) && !createRegex.test(command)) {
       //trex is not working, error: file
       //await chooseAppForMap(args[1] || "");
       break;
-    case createRegex.test(command):
+    case /^(scaffold|create|new|n)$/i.test(command):
       create(args[1] || "builder", args[2] || "app_builder");
       break;
     case /^(ls|list|ls-remote|ls_remote|scaffolds)$/i.test(command):
@@ -90,6 +86,9 @@ if (!existsSync(appsDir, { isDirectory: true }) && !createRegex.test(command)) {
       break;
     case /^(service|system|systemctl|systemd)$/i.test(command):
       service();
+      break;
+    case /^(certbot)$/i.test(command):
+      certbot();
       break;
     case /^(up|upgrade)$/i.test(command):
       upgrade();

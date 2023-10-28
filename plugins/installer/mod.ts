@@ -42,44 +42,46 @@ export function install(arg1: string, version = "") {
       );
       break;
     case "asdf":
-      console.log("asdf");
+      tool("asdf");
       break;
     case "scoop":
-      console.log("scoop");
+      tool("scoop");
       break;
     case "brew":
-      console.log("brew");
+      tool("brew");
       break;
     case "choco":
-      console.log("choco");
+      tool("choco");
       break;
     case "nvm":
-      console.log("nvm");
+      tool("nvm");
       break;
-    case "rust":
-      console.log("rust");
+    case "rust": case "rustc":
+      tool("rust");
       break;
     case "cargo":
-      console.log("cargo");
+      tool("cargo");
       break;
-    case "golang":
+    case "golang": case "go": case "go-lang":
       console.log("golang");
       break;
-    case "dotnet":
+    case "dotnet": case ".net": case ".net7":
       console.log("dotnet");
       break;
     case "crystal":
+    case "crystal-lang": case "crystallang":
       console.log("crystal");
+      tool('git');
       break;
     case "vlang":
-      console.log("vlang");
+      tool('vlang');
       break;
     case "git":
-      console.log("git");
       tool('git');
       break;
     case "build-tools":
-      console.log("build-tools");
+    case "build-essentials":
+      tool('build-essentials');
       break;
     case "emeraldcss":
     case "emerald":
@@ -253,6 +255,10 @@ export function nginx() {
 
 export function service() {
     console.log(green('\nservice'));
+}
+
+export function certbot() {
+    console.log(green('certbot'));
 }
 
 export function update() {
