@@ -1,15 +1,11 @@
 {
   "imports": {
     "preact-render-to-string/jsx": "https://esm.sh/preact-render-to-string@6.2.1/jsx",
-    "@preact/signals/": "https://esm.sh/@preact/signals/",
-    "@preact/signals": "https://esm.sh/@preact/signals",
     "preact-router": "https://esm.sh/preact-router@4.1.2",
     "inversify": "https://esm.sh/inversify",
     "preact": "https://esm.sh/preact@10.17.1?dts",
     "react": "https://esm.sh/preact@10.17.1/compat?dts",
-    "react-dom": "https://esm.sh/react-dom",
-    "react-dom/": "https://esm.sh/react-dom/",
-    "react-redux": "https://esm.sh/react-redux",
-    "react-redux/": "https://esm.sh/react-redux/"
+    "@preact/signals": "https://esm.sh/@preact/signals",
+    "@preact/signals/": "https://esm.sh/@preact/signals/"
   }
 }

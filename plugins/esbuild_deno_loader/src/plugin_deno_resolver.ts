@@ -105,6 +105,7 @@ export function denoResolverPlugin(
       // });
 
       build.onResolve({ filter: /.*/ }, async function onResolve(args) {
+        //console.log('onResolve plugin start:', args);
         // If this is a node_modules internal resolution, just pass it through.
         // Internal resolution is detected by either the "IN_NODE_MODULES" flag
         // being set on the resolve args through the pluginData field, or by

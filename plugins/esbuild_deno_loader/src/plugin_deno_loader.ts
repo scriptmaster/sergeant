@@ -11,7 +11,7 @@ import {
   Loader,
   urlToEsbuildResolution,
 } from "./shared.ts";
-import { green, yellow } from "https://deno.land/std@0.140.0/fmt/colors.ts";
+import { gray, green, red, yellow } from "https://deno.land/std@0.140.0/fmt/colors.ts";
 
 export interface DenoLoaderPluginOptions {
   /**
@@ -285,7 +285,7 @@ export function denoLoaderPlugin(
           }
           case "node": {
             const p = res.path.split('node:')[1] || '';
-            console.log('node:', green(p), 'https:'+nodePolyfillsLibs.get(p));
+            console.log('Polyfilling node:', green(p), gray('https:'+nodePolyfillsLibs.get(p)));
             return {
               path: nodePolyfillsLibs.get(p),
               namespace: 'https',
@@ -352,13 +352,25 @@ export function denoLoaderPlugin(
 
         const specifier = esbuildResolutionToURL(args);
         if (Deno.env.get('LOG') == 'DEBUG') console.log('SPECIFIER:', specifier.href);
-        return loaderImpl.loadEsm(specifier);
+        try {
+          const esm = await loaderImpl.loadEsm(specifier);
+          let contents = (esm.contents instanceof Uint8Array? new TextDecoder().decode(esm.contents): esm.contents);
+          // console.log('esm:', Object.keys(esm), esm.loader, contents);
+          if (esm.loader == 'js' && /\=import\(/.test("import\(") ) {
+            contents = contents?.replace(/=\s*import\(/, '=function(){console.log("resolving.. import", arguments)}') || '';
+          }
+          return { loader: esm.loader, contents: contents }; // esm;
+        } catch(e) {
+          console.log(red('error with loderImp.loadEsm'), specifier, e);
+          return { loader: 'file', contents: '/**/' }; loaderImpl.loadEsm(esbuildResolutionToURL({ path: args.path, external: true }))
+        }
       }
       // TODO(lucacasonato): once https://github.com/evanw/esbuild/pull/2968 is fixed, remove the catch all "file" handler
       build.onLoad({ filter: /.*/, namespace: "file" }, onLoad);
       build.onLoad({ filter: /.*/, namespace: "http" }, onLoad);
       build.onLoad({ filter: /.*/, namespace: "https" }, onLoad);
       build.onLoad({ filter: /.*/, namespace: "data" }, onLoad);
+      //build.onLoad({ filter: /.*/ }, onLoad);
     },
   };
 }

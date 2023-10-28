@@ -70,7 +70,8 @@ export function esbuildResolutionToURL(specifier: EsbuildResolution): URL {
     return toFileUrl(specifier.path);
   }
 
-  if (specifier.path.startsWith(specifier.namespace + ':')) return new URL(specifier.path);
+  //if (specifier.path.startsWith(specifier.namespace + ':')) return new URL(specifier.path);
+  if (specifier.path.startsWith(specifier.namespace)) return new URL(specifier.path);
   return new URL(`${specifier.namespace}:${specifier.path}`);
 }
 
