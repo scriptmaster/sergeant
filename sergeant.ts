@@ -40,7 +40,7 @@ import { green, red } from "https://deno.land/std@0.140.0/fmt/colors.ts";
 // deno install -A -f sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.0.2';
+const VERSION = 'v1.0.32';
 
 const ESBUILD_PLATFORM = Deno.env.get('ESBUILD_PLATFORM') || 'neutral';
 printASCII(VERSION);
@@ -97,7 +97,7 @@ if (!existsSync(appsDir, { isDirectory: true }) && !createRegex.test(command)) {
       break;
     case /^(update|up|upgrade)$/i.test(command):
       console.log(green('installing from https://denopkg.com/scriptmaster/sergeant/sergeant.ts'));
-      sh('deno', 'install -A -f -n sergeant https://denopkg.com/scriptmaster/sergeant/sergeant.ts');
+      shell('deno', 'install -A -f -n sergeant https://denopkg.com/scriptmaster/sergeant/sergeant.ts');
       break;
     case /^(alias)$/i.test(command):
       alias();
