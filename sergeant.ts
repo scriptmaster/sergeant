@@ -1,7 +1,9 @@
+#!deno
 import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
 //import { denoPlugins } from "https://esm.sh/gh/scriptmaster/esbuild_deno_loader@0.8.4/mod.ts";
 import { denoPlugins } from "./plugins/esbuild_deno_loader/mod.ts";
 import pluginVue from "https://esm.sh/esbuild-plugin-vue-next";
+import now from 'https://esm.sh/nano-time';
 
 import { NodeGlobalsPolyfillPlugin } from 'https://esm.sh/@esbuild-plugins/node-globals-polyfill';
 import { NodeModulesPolyfillPlugin } from 'https://esm.sh/@esbuild-plugins/node-modules-polyfill'
@@ -11,7 +13,8 @@ import {
   dirname,
   extname,
   join,
-  basename
+  basename,
+  resolve
 } from "https://deno.land/std@0.200.0/path/mod.ts";
 import { existsSync } from "https://deno.land/std@0.200.0/fs/mod.ts";
 import {
@@ -30,7 +33,7 @@ import { refresh } from "https://deno.land/x/refresh@1.0.0/mod.ts";
 import { serve } from "https://deno.land/std@0.200.0/http/server.ts";
 import { contentType } from "https://deno.land/std@0.201.0/media_types/content_type.ts";
 import { importString } from './plugins/import/mod.ts';
-import { green } from "https://deno.land/std@0.140.0/fmt/colors.ts";
+import { green, red } from "https://deno.land/std@0.140.0/fmt/colors.ts";
 //import type { Dictionary } from 'https://deno.land/x/ts_essentials/mod.ts'
 
 // To get started:
@@ -56,6 +59,9 @@ const dist = (appName: string) => join(cwd, distDir, appName);
 
 const createRegex = /^(scaffold|create|new|n)$/i;
 
+const HOME = Deno.env.get('HOME') || '';
+const rcFiles = ['.bashrc', '.zshrc', '.config/fish/config.fish'];
+
 if (!existsSync(appsDir, { isDirectory: true }) && !createRegex.test(command)) {
   console.log("No src or apps dir found, Looks like this is the first time you are using sergeant");
   ls_remote();
@@ -77,11 +83,184 @@ if (!existsSync(appsDir, { isDirectory: true }) && !createRegex.test(command)) {
     case /^(ls|list|ls-remote|ls_remote|scaffolds)$/i.test(command):
       ls_remote(command);
       break;
+    case /^(install|i)$/i.test(command):
+      install(args[1]);
+      break;
+    case /^(todo)$/i.test(command):
+      todo();
+      break;
+    case /^(nginx|nginx-site|nginx-add)$/i.test(command):
+      nginx();
+      break;
+    case /^(service|system|systemctl|systemd)$/i.test(command):
+      service();
+      break;
     case /^(update|up|upgrade)$/i.test(command):
+      console.log(green('installing from https://denopkg.com/scriptmaster/sergeant/sergeant.ts'));
       sh('deno', 'install -A -f -n sergeant https://denopkg.com/scriptmaster/sergeant/sergeant.ts');
+      break;
+    case /^(alias)$/i.test(command):
+      alias();
+      break;
+    case /^(source)$/i.test(command):
+      source();
       break;
     default:
       await buildApps(args[0] || "");
+  }
+}
+
+function alias() {
+  console.log(green('aliasing'));
+  const aliasMap: {[k: string]: string} = {
+    'sir': "'$(which sir)'",
+    'alo': "'alosaur'",
+  };
+  const a = args[2] || 'sir';
+  const v = aliasMap[a]? aliasMap[a]: aliasMap['sir'];
+  rcFiles.map(file => {
+    const f = join(HOME, file);
+    if ( ! existsSync(f)) return;
+    console.log(f);
+    const contents = Deno.readTextFileSync(f);
+    if(contents.includes(`alias ${a}=`)) {
+      const m = contents.match(new RegExp(`alias ${a}=(.+)`));
+      return console.log(file, red('Already aliased:'), m? m[0]: '');
+    }
+    Deno.writeTextFileSync(f, `\nalias ${a}=${v}\n`, { append: true });
+    // sh('echo', ['alias sir=$(which sergeant)', '>>', '~/.bashrc']);
+    // sh('alias', ['sir=$(which sergeant)']);
+    console.log(`alias alias ${a}=${v} >>`, file);
+  });
+  source();
+}
+
+function source() {
+  console.log(green('\nFor the changes to take effect, open a new shell, or in current shell:'));
+  rcFiles.map(file => {
+    const f = join(HOME, file);
+    if ( ! existsSync(f)) return;
+    console.log('\nDo:\n','source', f);
+  });
+}
+
+function nginx() {
+  console.log(green('\nFor the changes to take effect, open a new shell, or in current shell:'));
+  rcFiles.map(file => {
+    const f = join(HOME, file);
+    if ( ! existsSync(f)) return;
+    console.log('\nDo:\n','source', f);
+  });
+}
+
+function service() {
+  console.log(green('\nFor the changes to take effect, open a new shell, or in current shell:'));
+  rcFiles.map(file => {
+    const f = join(HOME, file);
+    if ( ! existsSync(f)) return;
+    console.log('\nDo:\n','source', f);
+  });
+}
+
+function todo() {
+  if ( ! args[1] ) {
+    return console.log('Usage:', 'sir todo yourtask');
+  }
+  const task=args.slice(1).join(' ');
+  console.log(green('TODO'+':'), task);
+  const f = join(HOME, 'todo.csv');
+  if( ! existsSync(f)) {
+    const csv_header = 'time,todo,done\n';
+    Deno.writeTextFileSync(f, csv_header);
+  }
+  const contents = [now(), `"${task}"`, ''].join(',');
+  Deno.writeTextFileSync(f, contents + '\n', { append: true });
+  shell('tail', f);
+}
+
+function shell(a: string, b: string | string[]) {
+  const o = sh(a, b);
+  console.log(o? o.stdout || o.stderr || o.code: '');
+}
+
+function install(arg1: string) {
+  const version = args[2] || '';
+  // Kept flexible (not-optimized) so permissions/logic can be modified if required;
+  switch(arg1) {
+    case 'vendor':
+      shell('deno', 'install -A -f -n vendor https://denopkg.com/scriptmaster/sergeant/vendor.ts');
+      break;
+    case 'unpm':
+      shell('deno', 'install -A -f -n unpm https://denopkg.com/scriptmaster/sergeant/unpm.mjs');
+      break;
+    case 'alosaur':
+      shell('deno', 'install -A -f -n alosaur https://deno.land/x/alosaur/cli.ts');
+      break;
+    case 'asdf':
+      console.log('asdf');
+      break;
+    case 'scoop':
+      console.log('scoop');
+      break;
+    case 'brew':
+      console.log('brew');
+      break;
+    case 'choco':
+      console.log('choco');
+      break;
+    case 'nvm':
+      console.log('nvm');
+      break;
+    case 'rust':
+      console.log('rust');
+      break;
+    case 'cargo':
+      console.log('cargo');
+      break;
+    case 'golang':
+      console.log('golang');
+      break;
+    case 'dotnet':
+      console.log('dotnet');
+      break;
+    case 'crystal':
+      console.log('crystal');
+      break;
+    case 'vlang':
+      console.log('vlang');
+      break;
+    case 'build-tools':
+      console.log('build-tools');
+      break;
+    case 'emeraldcss':
+    case 'emerald':
+      console.log('emeraldcss');
+      install('vendor');
+      shell('vendor', ['emeraldcss', version]);
+      break;
+    case 'antd':
+      console.log('antd');
+      install('vendor');
+      shell('vendor', ['antd', version]);
+      break;
+    case 'directus':
+      console.log('directus');
+      install('vendor');
+      shell('vendor', ['directus', version]);
+      break;
+    case 'react':
+      console.log('react', version);
+      install('vendor');
+      shell('vendor', ['react', version]);
+      break;
+    default:
+      if (['react-dom', 'preact'].includes(arg1)) {
+        console.log(arg1);
+        install('vendor');
+        shell('vendor', [arg1, version]);
+      } else {
+        console.log('\n\nUsage: sergeant install <package/tool-name>\n');
+      }
   }
 }
 
@@ -271,6 +450,7 @@ async function buildApp(appName: string) {
     platform: ESBUILD_PLATFORM || "browser", //
     //format: "cjs",
     format: "esm",
+    target: 'es2017',
     //target: "chrome58", //<-- no effect
     //splitting: true,
     //chunkNames: '[name]',
@@ -351,11 +531,14 @@ async function buildApp(appName: string) {
   }
 }
 
+import dynamicImportPlugin from 'https://esm.sh/esbuild-dynamic-import-plugin';
+
 function getPlugins(denoPluginOpts: DenoPluginOpts): esbuild.Plugin[] {
   return [
     //...nodePolyFillPlugins(),
     pluginVue({ templateOptions: 'compiler' }),
     ...denoPlugins(denoPluginOpts),
+    dynamicImportPlugin(),
   ];
 }
 
@@ -822,6 +1005,6 @@ function printASCII(version = 'v1.0.0') {
 `,
       11,
     ),
-    ESBUILD_PLATFORM
+    //'Build to:', ESBUILD_PLATFORM, '\n'
   );
 }

@@ -1,3 +1,4 @@
+#!deno
 /*
 
 esbuild plugin: https://github.com/oliverkuchies/esbuild-usemin
@@ -34,6 +35,7 @@ import { join } from "https://deno.land/std@0.201.0/path/join.ts";
 
 const args = Deno.args;
 const packageName = args[0];
+const packageVersion = args[1] || '';
 const cwd = Deno.cwd();
 
 const env = (key: string) => Deno.env.get(key);
@@ -82,7 +84,7 @@ if(!packageName) {
     // console.log(red('Require file or package name. Usage: vendor react'));
     // Deno.exit();
 } else {
-    await install(packageName, 'latest', true);
+    await install(packageName, packageVersion || 'latest', true);
 }
 
 // const dirname = path.resolve(path.dirname(installName)) || cwd;
