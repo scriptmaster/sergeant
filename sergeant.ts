@@ -26,7 +26,7 @@ import { contentType } from "https://deno.land/std@0.201.0/media_types/content_t
 import { importString } from './plugins/import/mod.ts';
 
 //import dynamicImportPlugin from 'https://esm.sh/esbuild-dynamic-import-plugin';
-import { alias, install, nginx, service, sh, shell, source, todo, upgrade } from "./plugins/installer/mod.ts";
+import { alias, install, nginx, service, sh, shell, source, todo, update, upgrade } from "./plugins/installer/mod.ts";
 
 //import type { Dictionary } from 'https://deno.land/x/ts_essentials/mod.ts'
 
@@ -34,7 +34,7 @@ import { alias, install, nginx, service, sh, shell, source, todo, upgrade } from
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.0.37';
+const VERSION = 'v1.0.38';
 
 const ESBUILD_PLATFORM = Deno.env.get('ESBUILD_PLATFORM') || 'neutral';
 printASCII(VERSION);
@@ -88,8 +88,11 @@ if (!existsSync(appsDir, { isDirectory: true }) && !createRegex.test(command)) {
     case /^(service|system|systemctl|systemd)$/i.test(command):
       service();
       break;
-    case /^(update|up|upgrade)$/i.test(command):
+    case /^(up|upgrade)$/i.test(command):
       upgrade();
+      break;
+    case /^(update)$/i.test(command):
+      update();
       break;
     case /^(alias)$/i.test(command):
       alias();

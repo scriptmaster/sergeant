@@ -74,6 +74,10 @@ export function install(arg1: string, version = "") {
     case "vlang":
       console.log("vlang");
       break;
+    case "git":
+      console.log("git");
+      tool('git');
+      break;
     case "build-tools":
       console.log("build-tools");
       break;
@@ -105,7 +109,8 @@ export function install(arg1: string, version = "") {
         shell("vendor", [arg1, version]);
       } else if (arg1) {
         console.log(
-          "\n\nPackage/Tool Not Available.\n\n  Please create an issue to add this tool/package: \n"
+          "\n\nPackage/Tool Not found.\n\n  Please create an issue to add this tool/package in this link:\n\n",
+          green("https://github.com/scriptmaster/sergeant/issues\n")
         );
       } else {
         console.log("\n\nUsage: sergeant install <package/tool-name>\n");
@@ -113,11 +118,56 @@ export function install(arg1: string, version = "") {
   }
 }
 
-export function shell(a: string, b: string | string[]) {
-  const o = sh(a, b);
-  console.log(o ? o.stdout || o.stderr || o.code : "");
+export function tool(name: string, existsCmd = '') {
+    if(WIN) {
+        // find choco or scoop
+        let o = sh('where', existsCmd || name);
+        if(!o.error) return o;
+
+        o = sh('where', 'choco');
+        if(!o.error) return shell('choco', 'install ' + name);
+
+        o = sh('where', 'scoop');
+        if(!o.error) return shell('scoop', 'install ' + name);
+    } else if (MAC) {
+        // find brew
+        let o = sh('which', existsCmd || name);
+        if(!o.error) return o;
+
+        o = sh('which', 'brew');
+        if(!o.error) return shell('brew', 'install ' + name);
+
+        console.error(red('brew not installed.'));
+    } else {
+        // nix
+        let o = sh('which', existsCmd || name);
+        if(!o.error) return o; // console.log('Already installed:', name);
+
+        o = sh('which', 'nix');
+        if (!o.error) return shell('nix', 'install ' + name);
+
+        o = sh('which', 'dnf');
+        if (!o.error) return shell('dnf', 'install ' + name);
+
+        o = sh('which', 'apt');
+        if (!o.error) {
+            const o2 = sh('apt', 'install ' + name);
+            if(!o2.error) { console.log(o2); return o2; }
+        }
+
+        // try with linuxbrew?
+        o = sh('which', 'brew');
+        if (!o.error) return shell('brew', 'install ' + name);
+
+        console.error(red('error:'), o.code, o.stderr, o.stdout);
+    }
 }
 
+export function shell(a: string, b: string | string[]) {
+    const o = sh(a, b);
+    console.log(o ? o.stdout || o.stderr || o.code : "");
+  }
+  
 export function sh(execPath: string, args: string | Array<string>) {
   try {
     const shell = Deno.env.get("SHELL") || "sh";
@@ -207,8 +257,8 @@ export function service() {
 
 export function update() {
     //const installUrl = `https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@nextof-${VERSION}/sergeant.ts` || 'https://denopkg.com/scriptmaster/sergeant/sergeant.ts';
-    //const installUrl = `https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@master/sergeant.ts` || 'https://denopkg.com/scriptmaster/sergeant/sergeant.ts';
-    const installUrl = `https://raw.githubusercontent.com/scriptmaster/sergeant/master/sergeant.ts`; // https://raw.githubusercontent.com/
+    const installUrl = `https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@master/sergeant.ts` || 'https://denopkg.com/scriptmaster/sergeant/sergeant.ts';
+    //const installUrl = `https://raw.githubusercontent.com/scriptmaster/sergeant/master/sergeant.ts`; // https://raw.githubusercontent.com/
     console.log(green('installing from'), installUrl);
     shell('deno', `install -A -f -n sir ${installUrl}`);
     shell('rm', join(HOME, `/.deno/bin/sergeant`));
