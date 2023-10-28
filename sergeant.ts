@@ -40,7 +40,7 @@ import { green, red } from "https://deno.land/std@0.140.0/fmt/colors.ts";
 // deno install -A -f sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.0.33';
+const VERSION = 'v1.0.34';
 
 const ESBUILD_PLATFORM = Deno.env.get('ESBUILD_PLATFORM') || 'neutral';
 printASCII(VERSION);
