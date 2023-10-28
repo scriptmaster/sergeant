@@ -112,6 +112,7 @@ if (!existsSync(appsDir, { isDirectory: true }) && !createRegex.test(command)) {
       await buildApps(args[0] || "");
   }
 }
+// .deno/bin
 
 function alias() {
   console.log(green('aliasing'));
@@ -261,6 +262,8 @@ function install(arg1: string) {
         console.log(arg1);
         install('vendor');
         shell('vendor', [arg1, version]);
+      } else if (arg1) {
+        console.log('\n\nPackage/Tool Not Available.\n\n  Please create an issue to add this tool/package: \n');
       } else {
         console.log('\n\nUsage: sergeant install <package/tool-name>\n');
       }
