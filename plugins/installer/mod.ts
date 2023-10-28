@@ -1,4 +1,4 @@
-import { green } from "https://deno.land/std@0.200.0/fmt/colors.ts";
+import { green, red } from "https://deno.land/std@0.200.0/fmt/colors.ts";
 import { dirname, extname, join, basename, resolve } from "https://deno.land/std@0.200.0/path/mod.ts";
 import { existsSync } from "https://deno.land/std@0.200.0/fs/mod.ts";
 import { ensureDir, ensureDirSync, } from "https://deno.land/std@0.173.0/fs/ensure_dir.ts";

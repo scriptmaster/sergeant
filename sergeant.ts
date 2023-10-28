@@ -34,8 +34,7 @@ import { alias, install, nginx, service, sh, shell, source, todo, upgrade } from
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.0.36';
-//const NEXT_VERSION = 'v1.0.36';
+const VERSION = 'v1.0.37';
 
 const ESBUILD_PLATFORM = Deno.env.get('ESBUILD_PLATFORM') || 'neutral';
 printASCII(VERSION);
@@ -500,7 +499,7 @@ type ReturningArrayFunc<T> = (o: T[]) => T[]
 type RouteFn = ReturningArrayFunc<RenderRoute>;
 type ShellFn = (appHtml: string, ...o2: object[]) => ''
 
-async function renderOutput(distDir: string, routes: RenderRoute[], routeFn: RouteFn, shellFn: ShellFn | string, appDir: string): void {
+async function renderOutput(distDir: string, routes: RenderRoute[], routeFn: RouteFn, shellFn: ShellFn | string, appDir: string) {
   const outputs = await routeFn(routes || []);
   if (outputs) {
     outputs.map(async (o: RenderRoute) => {
