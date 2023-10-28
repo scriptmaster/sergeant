@@ -34,9 +34,13 @@ import { alias, install, nginx, service, sh, shell, source, todo, update, upgrad
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.0.38';
+const VERSION = 'v1.0.40';
 
-const ESBUILD_PLATFORM = Deno.env.get('ESBUILD_PLATFORM') || 'neutral';
+const ESBUILD_MODE = Deno.env.get('ESBUILD_PLATFORM') || Deno.env.get('ESBUILD_MODE') || 'neutral';
+const ESBUILD_FORMAT = Deno.env.get('ESBUILD_FORMAT') || 'esm';
+const ESBUILD_TARGET = Deno.env.get('ESBUILD_TARGET') || 'es2017';
+const DEV_MODE = Deno.args.includes("--dev");
+
 printASCII(VERSION);
 
 const cwd = Deno.cwd();
@@ -46,7 +50,6 @@ const distDir = existsSync(join(cwd, "assets/js/")) ? "assets/js/" : existsSync(
 
 const args = Deno.args;
 const command = args[0];
-const DEV_MODE = Deno.args.includes("--dev");
 
 const app = (appName: string) => join(cwd, appsDir, appName);
 const dist = (appName: string) => join(cwd, distDir, appName);
@@ -293,15 +296,15 @@ async function buildApp(appName: string) {
     entryPoints,
     outdir,
     bundle: true,
-    platform: ESBUILD_PLATFORM || "browser", //
+    platform: ESBUILD_MODE || "browser", //
     //format: "cjs",
-    format: "esm",
-    target: 'es2017',
+    format: ESBUILD_FORMAT || "esm",
+    target: ESBUILD_TARGET || 'es2017',
     //target: "chrome58", //<-- no effect
     //splitting: true,
     //chunkNames: '[name]',
     treeShaking: true,
-    define: { 'process.env.NODE_ENV': '"production"' },
+    define: { 'process.env.NODE_ENV': DEV_MODE? '"development"': '"production"' },
     minify: !DEV_MODE,
     keepNames: DEV_MODE,
     jsxFactory: "React.createElement",
@@ -802,7 +805,7 @@ function printASCII(version = 'v1.0.0') {
   console.log(
     "✨ Sergeant 🫡     ",
     green(version), '     ',
-    "A front-end microservices framework!",
+    "A front-end microservices framework! (MicroFrontends)",
     "\n",
     cyan(
       `
@@ -834,6 +837,9 @@ function printASCII(version = 'v1.0.0') {
 `,
       11,
     ),
+    '\n',
+    VERSION, ` DEV_MODE=${DEV_MODE} ESBUILD_MODE=${ESBUILD_MODE} ESBUILD_FORMAT=${ESBUILD_FORMAT} ESBUILD_TARGET: ${ESBUILD_TARGET}`,
+    '\n',
     //'Build to:', ESBUILD_PLATFORM, '\n'
   );
 }

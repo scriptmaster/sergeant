@@ -144,20 +144,20 @@ export function tool(name: string, existsCmd = '') {
         if(!o.error) return o; // console.log('Already installed:', name);
 
         o = sh('which', 'nix');
-        if (!o.error) return shell('nix', 'install ' + name);
+        if (!o.error) return shell('sudo', ['nix', 'install ' + name]);
 
         o = sh('which', 'dnf');
-        if (!o.error) return shell('dnf', 'install ' + name);
+        if (!o.error) return shell('sudo', ['dnf', 'install ' + name]);
 
         o = sh('which', 'apt');
         if (!o.error) {
-            const o2 = sh('apt', 'install ' + name);
+            const o2 = sh('sudo', ['apt', 'install ' + name]);
             if(!o2.error) { console.log(o2); return o2; }
         }
 
         // try with linuxbrew?
         o = sh('which', 'brew');
-        if (!o.error) return shell('brew', 'install ' + name);
+        if (!o.error) return shell('sudo', ['brew', 'install ' + name]);
 
         console.error(red('error:'), o.code, o.stderr, o.stdout);
     }
