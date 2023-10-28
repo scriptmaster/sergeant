@@ -28,19 +28,20 @@ import {
   cyan,
   rgb8,
   yellow,
+  green, red, gray
 } from "https://deno.land/std@0.200.0/fmt/colors.ts";
 import { refresh } from "https://deno.land/x/refresh@1.0.0/mod.ts";
 import { serve } from "https://deno.land/std@0.200.0/http/server.ts";
 import { contentType } from "https://deno.land/std@0.201.0/media_types/content_type.ts";
 import { importString } from './plugins/import/mod.ts';
-import { green, red } from "https://deno.land/std@0.140.0/fmt/colors.ts";
 //import type { Dictionary } from 'https://deno.land/x/ts_essentials/mod.ts'
 
 // To get started:
-// deno install -A -f sergeant.ts; sergeant serve
+// deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.0.34';
+const VERSION = 'v1.0.35';
+//const NEXT_VERSION = 'v1.0.36';
 
 const ESBUILD_PLATFORM = Deno.env.get('ESBUILD_PLATFORM') || 'neutral';
 printASCII(VERSION);
@@ -95,10 +96,15 @@ if (!existsSync(appsDir, { isDirectory: true }) && !createRegex.test(command)) {
     case /^(service|system|systemctl|systemd)$/i.test(command):
       service();
       break;
-    case /^(update|up|upgrade)$/i.test(command):
-      console.log(green('installing from https://denopkg.com/scriptmaster/sergeant/sergeant.ts'));
-      shell('deno', 'install -A -f -n sergeant https://denopkg.com/scriptmaster/sergeant/sergeant.ts');
+    case /^(update|up|upgrade)$/i.test(command): {
+      const installUrl = `https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@latest/sergeant.ts` || 'https://denopkg.com/scriptmaster/sergeant/sergeant.ts';
+      console.log(green('installing from'), installUrl);
+      shell('deno', `install -A -f -n sir ${installUrl}`);
+      shell('rm', join(HOME, `/.deno/bin/sergeant`));
+      shell('deno', `install -A -f -n sergeant ${installUrl}`);
+      //shell('rm', `${HOME}/.deno/bin/sir`);
       break;
+    }
     case /^(alias)$/i.test(command):
       alias();
       break;
@@ -109,6 +115,7 @@ if (!existsSync(appsDir, { isDirectory: true }) && !createRegex.test(command)) {
       console.log(green(VERSION));
       break;
     default:
+      console.log(gray('>'), command);
       await buildApps(args[0] || "");
   }
 }
