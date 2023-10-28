@@ -58,8 +58,7 @@ for (const filename of ['deno.json', 'deno.jsonc'] as const) {
 		break;
 	} catch (error) {
 		if (error instanceof Deno.errors.NotFound) continue;
-
-		throw error;
+		// throw error;
 	}
 }
 

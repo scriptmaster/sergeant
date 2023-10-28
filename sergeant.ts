@@ -3,6 +3,10 @@ import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
 import { denoPlugins } from "./plugins/esbuild_deno_loader/mod.ts";
 import pluginVue from "https://esm.sh/esbuild-plugin-vue-next";
 
+import { NodeGlobalsPolyfillPlugin } from 'https://esm.sh/@esbuild-plugins/node-globals-polyfill';
+import { NodeModulesPolyfillPlugin } from 'https://esm.sh/@esbuild-plugins/node-modules-polyfill'
+import EsmExternals from 'https://esm.sh/@esbuild-plugins/esm-externals';
+
 import {
   dirname,
   extname,
@@ -33,8 +37,10 @@ import { green } from "https://deno.land/std@0.140.0/fmt/colors.ts";
 // deno install -A -f sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
+const VERSION = 'v1.0.2';
 
-printASCII('v1.0.2');
+const ESBUILD_PLATFORM = Deno.env.get('ESBUILD_PLATFORM') || 'neutral';
+printASCII(VERSION);
 
 const cwd = Deno.cwd();
 
@@ -241,8 +247,8 @@ async function buildApp(appName: string) {
   // deno.imports.lock.json
   const denoImportsLockFile = getDenoImportsLockFile(appDir);
   if (denoImportsLockFile) {
-    console.log(yellow("import map:"), denoImportsLockFile);
-    denoPluginOpts.importMapURL = 'file://'+denoImportsLockFile;
+    //console.log(yellow("import map:"), denoImportsLockFile);
+    //denoPluginOpts.importMapURL = 'file://'+denoImportsLockFile;
   }
 
   const entryPoints = [];
@@ -262,13 +268,16 @@ async function buildApp(appName: string) {
     entryPoints,
     outdir,
     bundle: true,
-    platform: "node",
+    platform: ESBUILD_PLATFORM || "browser", //
+    //format: "cjs",
     format: "esm",
-    splitting: true,
+    //target: "chrome58", //<-- no effect
+    //splitting: true,
     //chunkNames: '[name]',
     treeShaking: true,
     define: { 'process.env.NODE_ENV': '"production"' },
     minify: !DEV_MODE,
+    keepNames: DEV_MODE,
     jsxFactory: "React.createElement",
     jsxFragment: "React.Fragment",
     tsconfigRaw: defaultTsConfigRaw,
@@ -279,7 +288,7 @@ async function buildApp(appName: string) {
       const jsonConfig = json_parse(denoPluginOpts.configPath);
       if (jsonConfig && jsonConfig.compilerOptions) {
         const co = jsonConfig.compilerOptions;
-        esopts.tsconfigRaw = JSON.stringify({ compilerOptions: co });
+        //esopts.tsconfigRaw = JSON.stringify({ compilerOptions: co }); // The JSX factory cannot be set when using React's "automatic" JSX transform
         if (co.jsx == "preact") {
           esopts.jsxFactory = "h";
           esopts.jsxFragment = "Fragment";
@@ -344,9 +353,29 @@ async function buildApp(appName: string) {
 
 function getPlugins(denoPluginOpts: DenoPluginOpts): esbuild.Plugin[] {
   return [
+    //...nodePolyFillPlugins(),
     pluginVue({ templateOptions: 'compiler' }),
-    ...denoPlugins(denoPluginOpts), 
+    ...denoPlugins(denoPluginOpts),
   ];
+}
+
+function nodePolyFillPlugins() {
+  // import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
+  return [
+    NodeGlobalsPolyfillPlugin({
+      process: true,
+      buffer: true,
+      //define: { 'process.env.var': '"hello"' }, // inject will override define, to keep env vars you must also pass define here https://github.com/evanw/esbuild/issues/660
+    }),
+
+
+    // import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill'
+    NodeModulesPolyfillPlugin(),
+
+
+    //import EsmExternals from '@esbuild-plugins/esm-externals'
+    //EsmExternals({ externals: ['react', 'react-dom'] })
+  ]
 }
 
 
@@ -793,5 +822,6 @@ function printASCII(version = 'v1.0.0') {
 `,
       11,
     ),
+    ESBUILD_PLATFORM
   );
 }

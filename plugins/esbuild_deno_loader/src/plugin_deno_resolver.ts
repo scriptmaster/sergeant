@@ -98,6 +98,12 @@ export function denoResolverPlugin(
         }
       });
 
+      // build.onResolve({ filter: /.*/, namespace: 'node'}, async function(args) {
+      //   // ... 
+      //   console.log('resolving node:', args.path, nodePolyfillsLibs.get(args.path));
+      //   return { path: nodePolyfillsLibs.get(args.path), namespace: 'https' };
+      // });
+
       build.onResolve({ filter: /.*/ }, async function onResolve(args) {
         // If this is a node_modules internal resolution, just pass it through.
         // Internal resolution is detected by either the "IN_NODE_MODULES" flag
@@ -137,6 +143,7 @@ export function denoResolverPlugin(
             } else if (/\.(woff|woff2|eot|otf|ttf|svg|png|jpe?g)$/.test(args.path)) {
               if (args.importer.endsWith('.css')) {
                 if (LOG_DEBUG) console.log('=====css :external:', args.importer);
+                console.log('=====css external[1]:', args.path, 'importer:', args.importer);
                 return { path: args.path, namespace: args.namespace, external: true };
               }
               console.log('======= args.importer:', args.importer, basename(args.importer));
@@ -148,6 +155,7 @@ export function denoResolverPlugin(
               return { path: fromImportedPath, namespace: args.namespace };
             } else {
               if (args.importer.endsWith('.css')) {
+                console.log('=====css external[2]:', args.path, 'importer:', args.importer);
                 return { path: args.path, namespace: args.namespace, external: true };
               }
               //console.log('===========https://  .raw', args.path, args.namespace);
@@ -244,7 +252,6 @@ export function denoResolverPlugin(
             importMap,
             new URL(referrer),
           );
-          // console.log(green('resolved'), args.path);
           resolved = new URL(res);
         } else {
           resolved = new URL(args.path, referrer);
@@ -288,3 +295,4 @@ export function denoResolverPlugin(
 function fixPrefixNamespacePath(namespace: string, path: string) {
   return path.startsWith('//')? namespace + ':' + path: path;
 }
+
