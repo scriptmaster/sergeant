@@ -26,7 +26,7 @@ import { contentType } from "https://deno.land/std@0.201.0/media_types/content_t
 import { importString } from './plugins/import/mod.ts';
 
 //import dynamicImportPlugin from 'https://esm.sh/esbuild-dynamic-import-plugin';
-import { alias, certbot, install, nginx, readLines, service, sh, shell, source, todo, update, upgrade } from "./plugins/installer/mod.ts";
+import { alias, certbot, congrats, install, nginx, readLines, service, sh, shell, source, todo, update, upgrade } from "./plugins/installer/mod.ts";
 import { readFile } from "https://deno.land/std@0.98.0/node/_fs/_fs_readFile.ts";
 
 //import type { Dictionary } from 'https://deno.land/x/ts_essentials/mod.ts'
@@ -158,8 +158,10 @@ function versionCheck() {
           console.log(`\nTo pull this version do: sergeant up\n`); //
         })
       }
-    })
-  } catch(e){}
+    }).catch(e2 => {
+      congrats(e2);
+    });
+  } catch(e){ congrats(e); }
 }
 
 async function buildApps(appName = "") {

@@ -264,7 +264,7 @@ export async function readLines(filepath: string, cb: (line: string) => boolean,
   return await readBySplitter(filepath, new Uint8Array([10]), cb, maxLines);
 }
 
-function congrats(...everyone: (string | number | object)[]) { if (DEV_MODE) console.debug(...everyone); }
+export function congrats(...everyone: (string | number | object)[]) { if (DEV_MODE) console.debug(...everyone); }
 
 export async function readBySplitter(filepath: string, splitter: Uint8Array, cb: (line: string) => boolean, maxLines = 0) {
   if (!existsSync(filepath)) {
