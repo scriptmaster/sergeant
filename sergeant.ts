@@ -152,7 +152,7 @@ function versionCheck() {
     // console.log(o.split('\n'));
     if(o.ok) {
       o.text().then(t => {
-        const firstLine = t.split("\n\nWHAT'S NEW:\n")[0];
+        const firstLine = t.split("\n")[0];
         console.log(firstLine); // print the first line
         console.log(`\nTo pull this version do: sergeant up\n`); //
       })
