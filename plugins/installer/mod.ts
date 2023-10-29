@@ -16,8 +16,8 @@ const MAC = OS == 'darwin';
 //import it in sergeant.ts
 const args = Deno.args;
 const HOME = Deno.env.get('HOME') || '';
+const DEV_MODE = args.includes('--dev');
 const rcFiles = ['.bashrc', '.zshrc', '.config/fish/config.fish'];
-
 
 export function install(arg1: string, version = "") {
   // const version = args[2] || "";
@@ -85,6 +85,19 @@ export function install(arg1: string, version = "") {
       break;
     case "nessie":
       shell('deno', 'install -f -A -n nessie https://deno.land/x/nessie/cli.ts');
+      break;
+    case "typeorm":
+      shell('deno', 'install -f -A -n typeorm https://deno.land/x/typeorm/cli.ts');
+      break;
+    case "prisma":
+      console.log('prisma');
+      break;
+    case "ef": case "dotnet-ef": case "entity-framework":
+      console.log('dotnet-ef');
+      shell('dotnet', 'tool install --global dotnet-ef');
+      break;
+    case "soda":
+      shell('go', 'install -tags sqlite github.com/gobuffalo/pop/v6/soda@latest');
       break;
     case "emeraldcss":
     case "emerald":
@@ -215,6 +228,121 @@ export function todo() {
   const contents = [HOSTNAME, now(), `"${task}"`, ''].join(',');
   Deno.writeTextFileSync(f, contents + '\n', { append: true });
   shell('tail', f);
+}
+
+export function csv() {
+  if ( !args[1] || !args[1].endsWith('.csv') ) {
+    return console.log('Usage:', 'sir csv rps.csv');
+  }
+  const data=args.slice(1);
+  // console.log(green('TODO'+':'), task);
+  const f = join(HOME, args[1]);
+  if( ! existsSync(f)) {
+    const csvHeader = keepPrompting(255); // only max 255 columns supported.
+    //Deno.writeTextFileSync(f, csvHeader);
+  }
+  function getHeaderCols() { const header = sh('head', ''); };
+  const totalCols = getHeaderCols();
+  const cols = 2 + data.length;
+  const promptedData = keepPrompting();
+  const contents = [HOSTNAME, now(), ...data, ...promptedData].join(',');
+  Deno.writeTextFileSync(f, contents + '\n', { append: true });
+  shell('tail', f);
+}
+
+function keepPrompting() {
+  while(true) {
+    const colName = prompt("Enter column:");
+    //infering type
+    if (!colName) break;
+    break;
+  }
+}
+
+export async function readLines(filepath: string, cb: (line: string) => boolean, maxLines = 0) {
+  //return await readBySplitter(filepath, /\n/, cb, maxLines);
+  return await readBySplitter(filepath, new Uint8Array([10]), cb, maxLines);
+}
+
+function congrats(...everyone: (string | number | object)[]) { if (DEV_MODE) console.debug(...everyone); }
+
+export async function readBySplitter(filepath: string, splitter: Uint8Array, cb: (line: string) => boolean, maxLines = 0) {
+  if (!existsSync(filepath)) {
+    console.warn('cannot readLine from filepath:', filepath);
+    return '';
+  }
+
+  let seek = 0;
+  let linesRead = 0;
+  const bufferLength = parseInt(Deno.env.get('READ_BUFFER_SIZE') || '4096', 0) || 4096; // whats a good disk size buffer 4k or 128k? //eklitzke.org/efficient-file-copying-on-linux
+  const decoder = new TextDecoder();
+  const spl = decoder.decode(splitter);
+  congrats('splitter:', spl, 'splitter:', splitter);
+  
+  let lastReadChars = '';
+
+  const file = await Deno.open(
+    filepath,
+    { read: true, write: true, truncate: false, create: false },
+  );
+
+  if(!file) {
+    console.error('cannot open file:', file);
+  }
+
+  //try {
+    while(maxLines <= 0 || linesRead <= maxLines) {
+      const cursorPosition = await Deno.seek(file.rid, seek || 0, Deno.SeekMode.Start);
+      congrats('reading from: ', cursorPosition);
+
+      const buf = new Uint8Array(bufferLength);
+      const numBytesRead = await file.read(buf) || 0;
+      seek += numBytesRead;
+      congrats('numBytesRead', numBytesRead, 'seek', seek);
+
+      if (numBytesRead && numBytesRead > 0) {
+        const text = decoder.decode(buf).substring(0, numBytesRead);
+        congrats('text', text);
+
+        const lines = text.split(spl);
+        congrats('lines', lines, spl);
+
+        if (lines.length == 0) {
+          lastReadChars = text; // not ready for cb (yet);
+        } else {
+          lines[0] = lastReadChars + lines[0];
+          lastReadChars = lines[lines.length-1];
+          try {
+            linesRead++;
+            if (maxLines <= 0 || linesRead <= maxLines) {
+              if ( cb.call({line: linesRead}, lines[0]) === false ) return;
+              try {
+                lines.slice(1,-1).map(line => {
+                linesRead++;
+                if (maxLines <= 0 || linesRead <= maxLines) {
+                  if ( cb.call({line: linesRead}, line) === false ) throw new Error('cb: returned false at line:' + line);
+                }
+              }); } catch(e2) { throw e2; }
+            }
+          } catch(e) { throw e }
+        }
+      }
+
+      if (maxLines > 0 && linesRead > maxLines) break;
+
+      if (numBytesRead < bufferLength) { // reached eof?
+        linesRead++;
+        if (maxLines <= 0 || linesRead <= maxLines) {
+          try { if(lastReadChars) cb.call({line: linesRead}, lastReadChars); } catch(e3) { console.error(e3); }
+        }
+        break;
+      }
+
+      //if (maxLines > 0 && linesRead > maxLines) break;
+    }
+  //} catch(e4) { console.log(e4); }
+
+  file.close();
 }
 
 export function source() {
