@@ -8,6 +8,7 @@ const { build, hostname } = Deno;
 
 const OS = build.os;
 const HOSTNAME = hostname();
+const USER = Deno.env.get('USER') || 'root';
 
 const WIN = OS == 'windows';
 const NIX = OS == 'linux' || OS == 'darwin';
@@ -222,10 +223,10 @@ export function todo() {
   console.log(green('TODO'+':'), task);
   const f = join(HOME, 'todo.csv');
   if( ! existsSync(f)) {
-    const csv_header = 'by,time,todo,done\n';
+    const csv_header = 'user@host,time,todo,done\n';
     Deno.writeTextFileSync(f, csv_header);
   }
-  const contents = [HOSTNAME, now(), `"${task}"`, ''].join(',');
+  const contents = [USER+'@'+HOSTNAME, now(), `"${task}"`, ''].join(',');
   Deno.writeTextFileSync(f, contents + '\n', { append: true });
   shell('tail', f);
 }
@@ -245,19 +246,22 @@ export async function csv() {
 
   if( ! existsSync(f)) {
     const csvHeaders = keepPrompting('Enter column:'); // only max 255 columns supported.
-    Deno.writeTextFileSync(f, csvHeaders.join(',') + '\n');
+    if( !csvHeaders.includes('time') ) csvHeaders.unshift('time');
+    if( !csvHeaders.includes('user@host') ) csvHeaders.unshift('user@host');
+      Deno.writeTextFileSync(f, csvHeaders.join(',') + '\n');
   }
 
-  const headerCols = ['host', 'time'];
+  const headerCols: string[] = [];
   await readLines(f, line => { line.split(',').map(col => headerCols.push(col)); return true }, 1);
   console.log(yellow('Enter new row value for each header column'));
   console.log('\n', headerCols, '\n');
-
   // const cols = 2 + data.length;
 
   const promptedData = [];
   for(const col of headerCols) {
-    if (col == 'host') promptedData.push(HOSTNAME);
+    if (col == 'user@host') promptedData.push(USER+'@'+HOSTNAME);
+    else if (col == 'by' || col == 'user') promptedData.push(USER);
+    else if (col == 'host') promptedData.push(HOSTNAME);
     else if (col == 'time') promptedData.push(now());
     else {
       let p = prompt('Enter value ['+col+']:') || ''; // avoid || ?
@@ -267,7 +271,7 @@ export async function csv() {
   }
   // 
   //const contents = [HOSTNAME, now(), ...data, ...promptedData].join(',');
-  const contents = [HOSTNAME, now(), ...promptedData].join(',');
+  const contents = [...promptedData].join(',');
   Deno.writeTextFileSync(f, contents + '\n', { append: true });
   shell('tail', f);
 }

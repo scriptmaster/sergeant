@@ -7,3 +7,4 @@ apps/.*
 versions
 archive
 node_modules/
+flow/

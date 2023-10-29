@@ -35,7 +35,7 @@ import { readFile } from "https://deno.land/std@0.98.0/node/_fs/_fs_readFile.ts"
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.0.46';
+const VERSION = 'v1.0.47';
 
 const ESBUILD_MODE = Deno.env.get('ESBUILD_PLATFORM') || Deno.env.get('ESBUILD_MODE') || 'neutral';
 const ESBUILD_FORMAT = Deno.env.get('ESBUILD_FORMAT') || 'esm';
@@ -116,7 +116,8 @@ if (!command && !existsSync(appsDir, { isDirectory: true })) {
       break;
     default:
       console.log(gray('>'), command || '');
-      await buildApps(args[0] || "");
+      if (args.includes('--serve')) await serveApps(command || '');
+      else await buildApps(command || "");
   }
 }
 // .deno/bin
@@ -766,8 +767,7 @@ async function serveRefresh(appName: string, port: number) {
       return new Response(body, {
         headers: {
           "content-length": fileSize.toString(),
-          "content-type": contentType(extname(filePath)) ||
-            "application/octet-stream",
+          "content-type": contentType(extname(filePath)) || "application/octet-stream",
         },
       });
     }
@@ -789,7 +789,7 @@ async function serveRefresh(appName: string, port: number) {
 
   while(true) {
     try { tryServe(port); break; } catch(e) {
-      if (e.toString().includes('Address already in use')) {
+      if (e.toString().includes('already in use')) {
         port += 50;
       } else {
         console.error(e.toString(), e);

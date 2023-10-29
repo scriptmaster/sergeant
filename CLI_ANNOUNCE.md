@@ -1,3 +1,5 @@
+# v1.0.47 --serve and csv fixes
+
 # v1.0.46 Do prompt engineering with csv command
 * new command csv to prompt with --head option
 
