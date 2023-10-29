@@ -148,16 +148,18 @@ function lsRemoteScaffolds(command?: string): Array<string> {
 }
 
 function versionCheck() {
-  fetch('https://raw.githubusercontent.com/scriptmaster/sergeant/master/CLI_ANNOUNCE.md').then((o) => {
-    // console.log(o.split('\n'));
-    if(o.ok) {
-      o.text().then(t => {
-        const firstLine = t.split("\n")[0];
-        console.log(firstLine); // print the first line
-        console.log(`\nTo pull this version do: sergeant up\n`); //
-      })
-    }
-  })
+  try {
+    fetch('https://raw.githubusercontent.com/scriptmaster/sergeant/master/CLI_ANNOUNCE.md').then((o) => {
+      // console.log(o.split('\n'));
+      if(o.ok) {
+        o.text().then(t => {
+          const firstLine = t.split("\n")[0];
+          console.log(firstLine); // print the first line
+          console.log(`\nTo pull this version do: sergeant up\n`); //
+        })
+      }
+    })
+  } catch(e){}
 }
 
 async function buildApps(appName = "") {
