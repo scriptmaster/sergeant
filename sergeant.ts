@@ -26,7 +26,7 @@ import { contentType } from "https://deno.land/std@0.201.0/media_types/content_t
 import { importString } from './plugins/import/mod.ts';
 
 //import dynamicImportPlugin from 'https://esm.sh/esbuild-dynamic-import-plugin';
-import { alias, certbot, congrats, install, nginx, readLines, service, sh, shell, source, todo, update, upgrade } from "./plugins/installer/mod.ts";
+import { alias, certbot, congrats, csv, head, install, nginx, readLines, service, sh, shell, source, todo, update, upgrade } from "./plugins/installer/mod.ts";
 import { readFile } from "https://deno.land/std@0.98.0/node/_fs/_fs_readFile.ts";
 
 //import type { Dictionary } from 'https://deno.land/x/ts_essentials/mod.ts'
@@ -35,7 +35,7 @@ import { readFile } from "https://deno.land/std@0.98.0/node/_fs/_fs_readFile.ts"
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.0.45';
+const VERSION = 'v1.0.46';
 
 const ESBUILD_MODE = Deno.env.get('ESBUILD_PLATFORM') || Deno.env.get('ESBUILD_MODE') || 'neutral';
 const ESBUILD_FORMAT = Deno.env.get('ESBUILD_FORMAT') || 'esm';
@@ -84,11 +84,11 @@ if (!command && !existsSync(appsDir, { isDirectory: true })) {
       todo();
       break;
     case /^(head)$/i.test(command):
-      readLines(args[1], function(line) { console.log(gray((this as {line: number}).line + ':'), line); return true; }, parseInt(args[2], 10) || 10);
+      head();
       break;
-    // case /^(csv)$/i.test(command):
-    //   csv();
-    //   break;
+    case /^(csv)$/i.test(command):
+      csv();
+      break;
     case /^(nginx|nginx-site|nginx-add)$/i.test(command):
       nginx();
       break;

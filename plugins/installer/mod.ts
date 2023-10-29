@@ -1,4 +1,4 @@
-import { green, red } from "https://deno.land/std@0.200.0/fmt/colors.ts";
+import { gray, green, red, yellow } from "https://deno.land/std@0.200.0/fmt/colors.ts";
 import { dirname, extname, join, basename, resolve } from "https://deno.land/std@0.200.0/path/mod.ts";
 import { existsSync } from "https://deno.land/std@0.200.0/fs/mod.ts";
 import { ensureDir, ensureDirSync, } from "https://deno.land/std@0.173.0/fs/ensure_dir.ts";
@@ -230,33 +230,74 @@ export function todo() {
   shell('tail', f);
 }
 
-export function csv() {
+export async function csv() {
   if ( !args[1] || !args[1].endsWith('.csv') ) {
     return console.log('Usage:', 'sir csv rps.csv');
   }
-  const data=args.slice(1);
-  // console.log(green('TODO'+':'), task);
-  const f = join(HOME, args[1]);
+  const data=args.slice(2);
+  congrats('data', data);
+
+  const f = resolve(args[1].replace(/^~\//, HOME + '/'));
+  congrats('csv', f);
+
+  console.log(gray('File: '+f));
+  if (args.includes('--head')) return head();
+
   if( ! existsSync(f)) {
-    const csvHeader = keepPrompting(255); // only max 255 columns supported.
-    //Deno.writeTextFileSync(f, csvHeader);
+    const csvHeaders = keepPrompting('Enter column:'); // only max 255 columns supported.
+    Deno.writeTextFileSync(f, csvHeaders.join(',') + '\n');
   }
-  function getHeaderCols() { const header = sh('head', ''); };
-  const totalCols = getHeaderCols();
-  const cols = 2 + data.length;
-  const promptedData = keepPrompting();
-  const contents = [HOSTNAME, now(), ...data, ...promptedData].join(',');
+
+  const headerCols = ['host', 'time'];
+  await readLines(f, line => { line.split(',').map(col => headerCols.push(col)); return true }, 1);
+  console.log(yellow('Enter new row value for each header column'));
+  console.log('\n', headerCols, '\n');
+
+  // const cols = 2 + data.length;
+
+  const promptedData = [];
+  for(const col of headerCols) {
+    if (col == 'host') promptedData.push(HOSTNAME);
+    else if (col == 'time') promptedData.push(now());
+    else {
+      let p = prompt('Enter value ['+col+']:') || ''; // avoid || ?
+      if (p.includes(',')) p = `"${p}"`; // p? includes
+      promptedData.push( p );
+    }
+  }
+  // 
+  //const contents = [HOSTNAME, now(), ...data, ...promptedData].join(',');
+  const contents = [HOSTNAME, now(), ...promptedData].join(',');
   Deno.writeTextFileSync(f, contents + '\n', { append: true });
   shell('tail', f);
 }
 
-function keepPrompting() {
-  while(true) {
-    const colName = prompt("Enter column:");
-    //infering type
-    if (!colName) break;
-    break;
+export class ReadLineCallback {
+  line = 0;
+
+  callback(line: string) {
+    console.log(gray(this.line + ':'), line);
+    return true;
   }
+}
+
+export function head() {
+  readLines(args[1], new ReadLineCallback().callback, parseInt(args[2], 10) || 10);
+}
+
+function keepPrompting(label: string) {
+  const cols = [];
+  while(cols.length < 255) {
+    const colName = prompt(label + (label.endsWith(':')? '': ':'));
+    // check colName
+    if (!colName) break;
+    //infering type
+
+    // add to cols
+    cols.push(colName);
+  }
+
+  return cols;
 }
 
 export async function readLines(filepath: string, cb: (line: string) => boolean, maxLines = 0) {
@@ -278,7 +319,7 @@ export async function readBySplitter(filepath: string, splitter: Uint8Array, cb:
   const decoder = new TextDecoder();
   const spl = decoder.decode(splitter);
   congrats('splitter:', spl, 'splitter:', splitter);
-  
+
   let lastReadChars = '';
 
   const file = await Deno.open(

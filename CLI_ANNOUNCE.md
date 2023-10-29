@@ -1,5 +1,8 @@
+# v1.0.46 Do prompt engineering with csv command
+* new command csv to prompt with --head option
+
 # v1.0.45 new command: head   sergeant head file.csv 100
-* 
+* new command head
 
 # v1.0.44
 * Added typeorm tool
