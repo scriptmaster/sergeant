@@ -154,6 +154,7 @@ function versionCheck() {
       if(o.ok) {
         o.text().then(t => {
           const firstLine = t.split("\n")[0];
+          if(firstLine.split(' ')[1] == VERSION) return;
           console.log(firstLine); // print the first line
           console.log(`\nTo pull this version do: sergeant up\n`); //
         })
