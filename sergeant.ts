@@ -35,7 +35,7 @@ import { readFile } from "https://deno.land/std@0.98.0/node/_fs/_fs_readFile.ts"
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.0.47';
+const VERSION = 'v1.0.48';
 
 const ESBUILD_MODE = Deno.env.get('ESBUILD_PLATFORM') || Deno.env.get('ESBUILD_MODE') || 'neutral';
 const ESBUILD_FORMAT = Deno.env.get('ESBUILD_FORMAT') || 'esm';
