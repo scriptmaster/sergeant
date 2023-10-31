@@ -42,6 +42,9 @@ export function install(arg1: string, version = "") {
         "install -A -f -n alosaur https://deno.land/x/alosaur/cli.ts"
       );
       break;
+    case "prisma":
+      shell("deno", "install -A -f -n prisma npm:prisma@^4.5")
+      break;
     case "asdf":
       tool("asdf");
       break;
