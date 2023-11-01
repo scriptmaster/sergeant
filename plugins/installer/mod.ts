@@ -427,13 +427,125 @@ export function alias() {
   source();
 }
 
+export function awsS3Deploy() {
+  const appName = args[1] || prompt('Enter appName:') || '';
+  shell('aws', 's3 ls');
+  const s3BucketName = args[2] || prompt('Enter S3BucketName:') || '';
+  shell(`aws`, `s3 sync dist/${appName}/static/ s3://${s3BucketName}/`);
+}
 
 export function nginx() {
-    console.log(green('\nnginx'));
+
+  shell('nginx', '-t');
+
+  const nginxDefaultPath = (MAC? '/opt/homebrew': '') + "/etc/nginx/nginx.conf";
+  const nginxPath = existsSync(nginxDefaultPath)? nginxDefaultPath:
+    prompt("Confirm nginx.conf path: ", nginxDefaultPath) || nginxDefaultPath;
+
+  if (!existsSync(nginxPath)) {
+    return console.error('nginx.conf not found:', nginxPath);
+  }
+
+  const nginxSitesDefaultPath = (MAC? '/opt/homebrew': '') + "/etc/nginx/sites-enabled";
+  const nginxSitesPath = existsSync(nginxSitesDefaultPath)? nginxSitesDefaultPath:
+    prompt("Confirm nginx sites path: ", nginxSitesDefaultPath) || nginxSitesDefaultPath;
+
+  if (!existsSync(nginxSitesPath)) {
+    ensureDirSync(nginxSitesPath);
+    return console.error('nginx sites not found:', nginxSitesPath);
+  }
+
+  const nginxDir = dirname(nginxPath);
+  ensureDirSync(join(nginxDir, 'sites-enabled'));
+
+  const locals = {
+    createSite: false
+  };
+
+  if (!args[1]) {
+    locals.createSite = true; // (prompt('Do you want to create a new site? [Y/n]') || '').toLowerCase() == 'y';
+  }
+
+  const promptedSite = (prompt('Enter site/domain:') || '');
+  const siteDefautPath = join(nginxDir, 'sites-enabled', promptedSite);
+  console.log(siteDefautPath);
+  const sitePath = existsSync(siteDefautPath)? siteDefautPath:
+      prompt("Confirm nginx site/your domain: ", siteDefautPath) || '-';
+
+  //ensureDirSync(join(nginxDir, 'sites-available'));
+
+  if (!locals.createSite && sitePath == '-') {
+    return console.error('need a sites-enabled/ .conf file');
+  }
+
+  const siteName = basename(sitePath);
+  const proxyPort = prompt("Enter proxy port [8080]:", "8080") || "8080";
+
+  Deno.writeTextFileSync(`${MAC? "": "/etc/nginx/sites-enabled/"}${siteName}`, getSiteContents(siteName, proxyPort));
+
+  function getSiteContents(siteName: string, proxyPort: string) {
+    return `
+server {
+	# root /var/www/html;
+	# index index.html;
+
+  server_name ${siteName}; # managed by Certbot
+
+	location / {
+    proxy_pass http://127.0.0.1:${proxyPort};
+	}
+
+  listen [::]:443 ssl; # managed by Certbot
+  listen 443 ssl; # managed by Certbot
+  ssl_certificate /etc/letsencrypt/live/ai.msheriff.com-0002/fullchain.pem; # managed by Certbot
+  ssl_certificate_key /etc/letsencrypt/live/ai.msheriff.com-0002/privkey.pem; # managed by Certbot
+  include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+
+server {
+  if ($host = ${siteName}) {
+      return 301 https://$host$request_uri;
+  } # managed by Certbot
+
+  listen 80 ;
+  listen [::]:80 ;
+    server_name ${siteName};
+    return 404; # managed by Certbot
+  }
+`
+}
+
+  console.log(green('\nnginx'));
+
 }
 
 export function service() {
-    console.log(green('\nservice'));
+  let servicePath = args[1] || prompt('Enter service executable (ExecStart)') || '';
+  //servicePath = relative(servicePath, '/');
+  servicePath = resolve(servicePath);
+  if (!existsSync(servicePath)) console.log('serviceExecutable does not exist', servicePath);
+  console.log(servicePath);
+  const serviceName = basename(servicePath);
+  console.log(serviceName);
+  Deno.writeTextFileSync(`${MAC? "": "/etc/systemd/system/"}${serviceName}.service`, getServiceContents(serviceName, servicePath));
+
+  function getServiceContents(serviceName: string, servicePath: string) {
+    return `[Unit]
+Description=Service for ${serviceName}
+
+[Service]
+Environment="DENO_ENV=production"
+Environment="NODE_ENV=production"
+ExecStart="${servicePath}"
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+`;
+  }
+
+  console.log(green('\nservice'));
 }
 
 export function certbot() {

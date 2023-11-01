@@ -26,7 +26,7 @@ import { contentType } from "https://deno.land/std@0.201.0/media_types/content_t
 import { importString } from './plugins/import/mod.ts';
 
 //import dynamicImportPlugin from 'https://esm.sh/esbuild-dynamic-import-plugin';
-import { alias, certbot, congrats, csv, head, install, nginx, readLines, service, sh, shell, source, todo, update, upgrade } from "./plugins/installer/mod.ts";
+import { alias, awsS3Deploy, certbot, congrats, csv, head, install, nginx, readLines, service, sh, shell, source, todo, update, upgrade } from "./plugins/installer/mod.ts";
 import { readFile } from "https://deno.land/std@0.98.0/node/_fs/_fs_readFile.ts";
 
 //import type { Dictionary } from 'https://deno.land/x/ts_essentials/mod.ts'
@@ -35,7 +35,7 @@ import { readFile } from "https://deno.land/std@0.98.0/node/_fs/_fs_readFile.ts"
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.0.48';
+const VERSION = 'v1.0.49';
 
 const ESBUILD_MODE = Deno.env.get('ESBUILD_PLATFORM') || Deno.env.get('ESBUILD_MODE') || 'neutral';
 const ESBUILD_FORMAT = Deno.env.get('ESBUILD_FORMAT') || 'esm';
@@ -88,6 +88,9 @@ if (!command && !existsSync(appsDir, { isDirectory: true })) {
       break;
     case /^(csv)$/i.test(command):
       csv();
+      break;
+    case /^(aws|s3|aws-s3|s3-deploy|deploy-s3)$/i.test(command):
+      awsS3Deploy();
       break;
     case /^(nginx|nginx-site|nginx-add)$/i.test(command):
       nginx();
@@ -281,8 +284,14 @@ async function buildApp(appName: string) {
     entryFile += '.ts';
     mainEntry += '.ts';
   } else if (existsSync(join(appDir, entryFile) + '.tsx')) {
-    entryFile += '.ts';
+    entryFile += '.tsx';
     mainEntry += '.tsx';
+  } else if (existsSync(join(appDir, 'index') + '.ts')) {
+    entryFile = "index.ts";
+    mainEntry = join(appDir, entryFile);
+  } else if (existsSync(join(appDir, 'index') + '.tsx')) {
+    entryFile = "index.tsx";
+    mainEntry = join(appDir, entryFile);
   } else {
     console.error("main entry not found in this dir", appDir);
     return;
@@ -530,7 +539,7 @@ async function staticRender(appName: string, esopts: any, denoPluginOpts: DenoPl
 
 type ReturningArrayFunc<T> = (o: T[]) => T[]
 type RouteFn = ReturningArrayFunc<RenderRoute>;
-type ShellFn = (appHtml: string, ...o2: object[]) => ''
+type ShellFn = (appHtml: string, ...o2: (object | string)[]) => ''
 
 async function renderOutput(distDir: string, routes: RenderRoute[], routeFn: RouteFn, shellFn: ShellFn | string, appDir: string) {
   const outputs = await routeFn(routes || []);
@@ -558,7 +567,7 @@ async function renderOutput(distDir: string, routes: RenderRoute[], routeFn: Rou
 
       // it could be re-used:
       if (typeof shellFn == 'function') {
-        o.output = (shellFn as ShellFn)(o.output || '');
+        o.output = (shellFn as ShellFn)(o.output || '', o.state || {}, o.title || '', o.metas || []);
       }
 
       ensureDirSync(join(distDir, o.path));
@@ -569,7 +578,7 @@ async function renderOutput(distDir: string, routes: RenderRoute[], routeFn: Rou
 
 function getHtmlShellByLayout(layout: string, appHtml: string, state: object, title?: string, metas?: Meta[]) {
   return layout
-    .replace(/\<title\>(.*?)\<\/title\>/, (_, dTitle) => `<title>${title || dTitle}</title>`)
+    .replace(/\<title\>(.*?)\<\/title\>/, (_, dTitle) => `<title>${title || dTitle || ''}</title>`)
     .replace(/\<\!\-\-(app|html|app-html)\-\-\>/i, appHtml)
     .replace(/\<\!\-\-(state|scripts)\-\-\>/, `<script>window.__STATE__=${JSON.stringify(state).replace(/<|>/g, '')}</script>`)
     .replace(/\<\!\-\-metas?\-\-\>/, getMetas(metas))
@@ -588,7 +597,7 @@ function getDefaultHtmlShellFn() {
     </head>
     <body>
         <div id="app">${appHtml}</div>
-        <script>window.__STATE__=${JSON.stringify(state).replace(/<|>/g, '')}</script>
+        <script>window.__STATE__=${JSON.stringify(state || {}).replace(/<|>/g, '')}</script>
         <script src="./app.js"></script>
     </body>
 </html>

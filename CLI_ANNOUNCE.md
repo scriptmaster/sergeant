@@ -1,3 +1,5 @@
+# v1.0.49 nginx and service commands added. routes json
+
 # v1.0.48 new prisma command
  - planned: new commands and conversions/integrations,s2go,tstl,bundle file,runner,nhttp,
  - secrets encryption

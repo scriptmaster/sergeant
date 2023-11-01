@@ -197,13 +197,19 @@ export function denoResolverPlugin(
         // We can then resolve the specifier relative to the referrer URL. If
         // an import map is specified, we use that to resolve the specifier.
         let resolved: URL;
+        const autoMap = (Deno.env.get('AUTO_MAP') !== 'false') || true;
+        if (autoMap) {
+          importMap = { imports: {} }
+        }
+
         if (importMap !== null) {
-          if (LOG_DEBUG) console.log('RESOLVING WITH IMPORTMAP', args.path);
+          if (LOG_DEBUG) console.log('RESOLVING WITH IMPORTMAP/AUTO-MAPPER', args.path);
 
           if (referrer.protocol == 'file:' && !(/https?\:/.test(args.path)) && !/[\/\.]/.test(args.path[0]) &&
-                  !existsSync(args.path) && importMap.imports && !importMap.imports[args.path]) {
-            console.log('unmapped import', args.path, 'specifier:', referrer.protocol, referrer.pathname);
+                  !existsSync(args.path)) {
+            //console.log('unmapped import', args.path, 'specifier:', referrer.protocol, referrer.pathname);
 
+            //&& importMap.imports && !importMap.imports[args.path]
             let localPath = '';
 
             //if (args.path[0] == '/' || args.path[0] == '.') {
