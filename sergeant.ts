@@ -21,26 +21,22 @@ import {
   green, red, gray
 } from "https://deno.land/std@0.200.0/fmt/colors.ts";
 import { refresh } from "https://deno.land/x/refresh@1.0.0/mod.ts";
-import { serve } from "https://deno.land/std@0.200.0/http/server.ts";
 import { contentType } from "https://deno.land/std@0.201.0/media_types/content_type.ts";
 import { importString } from './plugins/import/mod.ts';
 
 //import dynamicImportPlugin from 'https://esm.sh/esbuild-dynamic-import-plugin';
 import { alias, awsS3Deploy, certbot, congrats, csv, head, install, nginx, readLines, service, sh, shell, source, todo, update, upgrade } from "./plugins/installer/mod.ts";
-import { readFile } from "https://deno.land/std@0.98.0/node/_fs/_fs_readFile.ts";
-
-//import type { Dictionary } from 'https://deno.land/x/ts_essentials/mod.ts'
 
 // To get started:
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.0.49';
-
+const VERSION = 'v1.0.50';
 const ESBUILD_MODE = Deno.env.get('ESBUILD_PLATFORM') || Deno.env.get('ESBUILD_MODE') || 'neutral';
 const ESBUILD_FORMAT = Deno.env.get('ESBUILD_FORMAT') || 'esm';
-const ESBUILD_TARGET = Deno.env.get('ESBUILD_TARGET') || 'es2017';
+const ESBUILD_TARGET = Deno.env.get('ESBUILD_TARGET') || 'esnext';
 const DEV_MODE = Deno.args.includes("--dev");
+const ESM_EXTERNALS = Deno.env.get('ESM_EXTERNALS') || Deno.env.get('EXTERNALS') || '';
 
 printASCII(VERSION);
 
@@ -48,6 +44,7 @@ const cwd = Deno.cwd();
 
 const appsDir = existsSync(join(cwd, "src")) ? "src" : "apps";
 const distDir = existsSync(join(cwd, "assets/js/")) ? "assets/js/" : existsSync(join(cwd, "static/"))? "static/": "dist";
+const STATIC_DIR = Deno.env.get('STATIC_DIR') || '.';
 
 const args = Deno.args;
 const command = args[0];
@@ -405,11 +402,12 @@ async function buildApp(appName: string) {
   try {
     const staticResult = await staticRender(appName, esopts, denoPluginOpts);
     if (staticResult) {
-      const staticDir = join(dist(appName), 'static');
+      //console.log('staticResult:', staticResult);
+      const staticDir = join(dist(appName), STATIC_DIR);
       const copyStaticFile = (file: string) => { if (existsSync(file)) Deno.copyFileSync(file, join(staticDir, basename(file))); }
 
-      copyStaticFile(outfile)
-      copyStaticFile(outfile2)
+      //copyStaticFile(outfile)
+      //copyStaticFile(outfile2)
     }
   } catch(e) {
     console.error(e);
@@ -439,9 +437,8 @@ function nodePolyFillPlugins() {
     // import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill'
     NodeModulesPolyfillPlugin(),
 
-
     //import EsmExternals from '@esbuild-plugins/esm-externals'
-    //EsmExternals({ externals: ['react', 'react-dom'] })
+    EsmExternals({ externals: [ESM_EXTERNALS.split(',')] })
   ]
 }
 
@@ -522,9 +519,9 @@ async function staticRender(appName: string, esopts: any, denoPluginOpts: DenoPl
           return console.log('No route function found: render(routes) or renderRoutes(routes)');
         }
 
-        const staticDir = join(distDir, 'static');
+        const staticDir = join(distDir, STATIC_DIR);
         ensureDirSync(staticDir);
-        console.log(brightGreen('SSG: ' + staticDir));
+        console.log(brightGreen('Static Site Generation: ') + gray(staticDir));
 
         await renderOutput(staticDir, routesJson.routes, routeFn, shellFn, appDir);
       }
@@ -562,6 +559,8 @@ async function renderOutput(distDir: string, routes: RenderRoute[], routeFn: Rou
           const layout = Deno.readTextFileSync(layoutFile);
           //4 regex: title, metas, html, script
           o.output = getHtmlShellByLayout(layout, o.output || '', o.state || {}, o.title || '', o.metas || [])
+        } else {
+          console.error('Specified layout file not found:', layoutFile);
         }
       }
 
@@ -576,8 +575,9 @@ async function renderOutput(distDir: string, routes: RenderRoute[], routeFn: Rou
   }
 }
 
-function getHtmlShellByLayout(layout: string, appHtml: string, state: object, title?: string, metas?: Meta[]) {
+function getHtmlShellByLayout(layout: string, appHtml: string, state: object, title?: string, metas?: Meta[], lang?: string) {
   return layout
+    .replace(/ lang\=\"(.*?)\"/, (_, defLang) => ` lang="${lang || defLang || 'en'}"`)
     .replace(/\<title\>(.*?)\<\/title\>/, (_, dTitle) => `<title>${title || dTitle || ''}</title>`)
     .replace(/\<\!\-\-(app|html|app-html)\-\-\>/i, appHtml)
     .replace(/\<\!\-\-(state|scripts)\-\-\>/, `<script>window.__STATE__=${JSON.stringify(state).replace(/<|>/g, '')}</script>`)
@@ -585,20 +585,22 @@ function getHtmlShellByLayout(layout: string, appHtml: string, state: object, ti
 }
 
 function getDefaultHtmlShellFn() {
-  const HTMLShellFn = (appHtml: string, state: object, title?: string, metas?: Meta[]) => `
-<!DOCTYPE html>
-<html>
+  const HTMLShellFn = (appHtml: string, state: object, title?: string, metas?: Meta[], lang?: string) => `<!DOCTYPE html>
+<html lang="${lang || 'en'}">
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.2/css/bulma.min.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+        <link rel="stylesheet" href="/main.css" />
+
         <title>${title}</title>
         ${getMetas(metas)}
     </head>
     <body>
         <div id="app">${appHtml}</div>
         <script>window.__STATE__=${JSON.stringify(state || {}).replace(/<|>/g, '')}</script>
-        <script src="./app.js"></script>
+
+        <script src="/main.js"></script>
     </body>
 </html>
 `
@@ -873,7 +875,7 @@ function printASCII(version = 'v1.0.0') {
       11,
     ),
     '\n',
-    VERSION, ` DEV_MODE=${DEV_MODE} ESBUILD_MODE=${ESBUILD_MODE} ESBUILD_FORMAT=${ESBUILD_FORMAT} ESBUILD_TARGET: ${ESBUILD_TARGET}`,
+    VERSION, ` DEV_MODE=${DEV_MODE} ESBUILD_MODE=${ESBUILD_MODE} ESBUILD_FORMAT=${ESBUILD_FORMAT} ESBUILD_TARGET: ${ESBUILD_TARGET} ESM_EXTERNALS: ${ESM_EXTERNALS}`,
     '\n',
     //'Build to:', ESBUILD_PLATFORM, '\n'
   );

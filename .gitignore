@@ -8,3 +8,4 @@ versions
 archive
 node_modules/
 flow/
+*.lock.json
