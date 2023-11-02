@@ -42,7 +42,7 @@ printASCII(VERSION);
 
 const cwd = Deno.cwd();
 
-const appsDir = existsSync(join(cwd, "src")) ? "src" : "apps";
+const appsDir = existsSync(join(cwd, "src")) ? "src" : existsSync(join(cwd, "apps"))? "apps": existsSync(join(cwd, "microservices"))? "microservices": (Deno.env.get('SRC_DIR') || Deno.env.get('SERVICES_DIR') || 'services');
 const distDir = existsSync(join(cwd, "assets/js/")) ? "assets/js/" : existsSync(join(cwd, "static/"))? "static/": "dist";
 const STATIC_DIR = Deno.env.get('STATIC_DIR') || '.';
 
