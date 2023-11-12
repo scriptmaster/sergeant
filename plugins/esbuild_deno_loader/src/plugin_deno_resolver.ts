@@ -124,6 +124,11 @@ export function denoResolverPlugin(
           return res;
         }
 
+        if (args.namespace=='data') {
+          console.log(args.namespace, args.path);
+          return { path: args.path, namespace: args.namespace, external: true };
+        }
+
         if (/\./.test(args.path) && !/\.(js|jsx|ts|tsx|mjs|cjs)$/.test(args.path) && !/\:/.test(args.path)) {
 
           if (args.namespace=='file') {
