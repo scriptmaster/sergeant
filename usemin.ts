@@ -39,8 +39,7 @@ import pluginVue from "https://esm.sh/esbuild-plugin-vue-next";
 
 import { brightGreen } from "https://deno.land/std@0.200.0/fmt/colors.ts";
 
-const args = Deno.args;
-
+const args = Deno.args
 if(!args[0] || !existsSync(args[0])) {
     throw new Error('Require file name. Usage: usemin index.html');
 }

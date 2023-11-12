@@ -199,7 +199,7 @@ export function denoResolverPlugin(
         let resolved: URL;
         const autoMap = (Deno.env.get('AUTO_MAP') !== 'false') || true;
         if (autoMap) {
-          importMap = { imports: {} }
+          importMap = { imports: Object.assign({}, importMap?.imports || {}) }
         }
 
         if (importMap !== null) {
@@ -210,7 +210,7 @@ export function denoResolverPlugin(
             //console.log('unmapped import', args.path, 'specifier:', referrer.protocol, referrer.pathname);
 
             //&& importMap.imports && !importMap.imports[args.path]
-            let localPath = '';
+            let resolvedToLocalFile = '';
 
             //if (args.path[0] == '/' || args.path[0] == '.') {
             const localResolution = ['./$1/index.js', './$1/mod.ts', 'src/$1/index.js', 'src/$1/mod.ts',
@@ -222,35 +222,42 @@ export function denoResolverPlugin(
               const lrp = join(refdir, lr.replace('$1', args.path));
               //console.log(refdir, lr, args.path, lrp);
               if (existsSync(lrp)) {
-                localPath = lrp;
-                console.log('resolved to localPath:', localPath);
+                resolvedToLocalFile = lrp;
+                if (LOG_DEBUG) console.log('resolved to localPath:', resolvedToLocalFile);
                 break;
               }
             }
             //}
 
-            if (!localPath) {
-              // define in the imports: { "cdnurl": "https://cdn.skypack.dev/" }
-              const defaultCdn = 'https://esm.sh';
-              const getCdnUrl = (importMap: ImportMap) => (importMap?.imports? importMap?.imports['cdnurl'] ?? defaultCdn: defaultCdn);
-              const mappedUrl = getCdnUrl(importMap) + (args.path[0] == '/'? '': '/') + args.path;
+            if (!resolvedToLocalFile) {
+              if (!importMap.imports) importMap.imports = {};
 
-              const stripTrailingSlashes = (s: string) => stripTrailingSeparators(s, c => c == '/'.charCodeAt(0));
+              if (importMap.imports && importMap.imports[args.path]) {
+                if (LOG_DEBUG) console.log(green('mapping importMap.imports: '), args.path, '=>', importMap.imports[args.path]);
+              } else {
+                // define in the imports: { "cdnurl": "https://cdn.skypack.dev/" }
+                const defaultCdn = 'https://esm.sh';
+                const getCdnUrl = (importMap: ImportMap) => (importMap?.imports? importMap?.imports['cdnurl'] ?? defaultCdn: defaultCdn);
+                const mappedUrl = getCdnUrl(importMap) + (args.path[0] == '/'? '': '/') + args.path;
 
-              const aPath = stripTrailingSlashes(args.path);
-              const mappedUrl2 = stripTrailingSlashes(mappedUrl);
+                const stripTrailingSlashes = (s: string) => stripTrailingSeparators(s, c => c == '/'.charCodeAt(0));
 
-              importMap.imports[aPath] = mappedUrl2;
-              importMap.imports[aPath + '/'] = mappedUrl2 + '/';
+                const aPath = stripTrailingSlashes(args.path);
+                const mappedUrl2 = stripTrailingSlashes(mappedUrl);
+
+                importMap.imports[aPath] = mappedUrl2;
+                importMap.imports[aPath + '/'] = mappedUrl2 + '/';
+
+                console.log(green('cdn mapped:'), yellow(args.path), '=', green(mappedUrl));
+              }
 
               Deno.writeTextFileSync("deno.imports.lock.json", JSON.stringify({
                 "imports": importMap.imports
               }, null, 2));
-
-              console.log(green('mapped:'), yellow(args.path), '=', green(mappedUrl));
+            } else if (existsSync(resolvedToLocalFile)) {
+              console.log(green('resolvedToLocalFile:'), yellow(args.path));
             } else {
-              // console.log(red('bare file: specifier unresolved'), args.path, args, referrer);
-              console.log(green('checking:'), yellow(args.path));
+              console.log(red('bare file: specifier unresolved'), args.path, args, referrer);
             }
           }
 

@@ -31,12 +31,14 @@ import { alias, awsS3Deploy, certbot, congrats, csv, head, install, nginx, readL
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.0.50';
+const VERSION = 'v1.1.0';
 const ESBUILD_MODE = Deno.env.get('ESBUILD_PLATFORM') || Deno.env.get('ESBUILD_MODE') || 'neutral';
 const ESBUILD_FORMAT = Deno.env.get('ESBUILD_FORMAT') || 'esm';
 const ESBUILD_TARGET = Deno.env.get('ESBUILD_TARGET') || 'esnext';
 const DEV_MODE = Deno.args.includes("--dev");
 const ESM_EXTERNALS = Deno.env.get('ESM_EXTERNALS') || Deno.env.get('EXTERNALS') || '';
+
+const LOG_DEBUG = Deno.env.get('LOG') == 'DEBUG';
 
 printASCII(VERSION);
 
@@ -304,13 +306,16 @@ async function buildApp(appName: string) {
 
   const denoJsonFile = getDenoJsonFile(appDir);
   if (denoJsonFile) denoPluginOpts.configPath = denoJsonFile;
+  if (LOG_DEBUG) console.log('denoJsonFile: ', denoJsonFile);
 
   // deno.imports.lock.json
   const denoImportsLockFile = getDenoImportsLockFile(appDir);
   if (denoImportsLockFile) {
-    //console.log(yellow("import map:"), denoImportsLockFile);
+    console.log(yellow("import map:"), denoImportsLockFile);
     //denoPluginOpts.importMapURL = 'file://'+denoImportsLockFile;
   }
+
+  if (LOG_DEBUG) console.log('denoPluginOpts.configPath:', denoPluginOpts.configPath);
 
   const entryPoints = [];
   entryPoints.push(mainEntry);
@@ -329,10 +334,10 @@ async function buildApp(appName: string) {
     entryPoints,
     outdir,
     bundle: true,
-    platform: ESBUILD_MODE || "browser", //
+    platform: ESBUILD_MODE || "neutral", //
     //format: "cjs",
     format: ESBUILD_FORMAT || "esm",
-    target: ESBUILD_TARGET || 'es2017',
+    target: ESBUILD_TARGET || 'esnext',
     //target: "chrome58", //<-- no effect
     //splitting: true,
     //chunkNames: '[name]',
