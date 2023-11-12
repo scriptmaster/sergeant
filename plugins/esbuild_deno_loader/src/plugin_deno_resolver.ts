@@ -125,7 +125,6 @@ export function denoResolverPlugin(
         }
 
         if (args.namespace=='data') {
-          console.log(args.namespace, args.path);
           return { path: args.path, namespace: args.namespace, external: true };
         }
 
