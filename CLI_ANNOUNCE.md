@@ -1,3 +1,5 @@
+# v1.1.0 local and importmap auto-map resolution
+
 # v1.0.50 esm_externals and esbuild_version esnext
 
 # v1.0.49 nginx and service commands added. routes json
