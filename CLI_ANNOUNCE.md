@@ -1,3 +1,4 @@
+# v1.1.6 service
 # v1.1.5 data: image support
 
 # v1.1.0 local and importmap auto-map resolution

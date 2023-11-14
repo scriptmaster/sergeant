@@ -522,11 +522,13 @@ server {
 
 export function service() {
   let servicePath = args[1] || prompt('Enter service executable (ExecStart)') || '';
-  //servicePath = relative(servicePath, '/');
+
   servicePath = resolve(servicePath);
   if (!existsSync(servicePath)) console.log('serviceExecutable does not exist', servicePath);
+
   console.log(servicePath);
   const serviceName = basename(servicePath);
+
   console.log(serviceName);
   Deno.writeTextFileSync(`${MAC? "": "/etc/systemd/system/"}${serviceName}.service`, getServiceContents(serviceName, servicePath));
 
@@ -545,7 +547,12 @@ WantedBy=multi-user.target
 `;
   }
 
-  console.log(green('\nservice'));
+  console.log(green('\nservice installed'));
+
+  shell('systemctl', 'daemon-reload');
+  shell('systemctl', `enable ${serviceName}`);
+  shell('systemctl', `start ${serviceName}`);
+  shell('systemctl', `status ${serviceName}`);
 }
 
 export function certbot() {
