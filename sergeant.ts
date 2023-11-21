@@ -1,4 +1,5 @@
 #!deno
+/// <reference lib="deno.ns" />
 import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js"; //v0.19.1 was better?
 //import { denoPlugins } from "https://esm.sh/gh/scriptmaster/esbuild_deno_loader@0.8.4/mod.ts";
 import { denoPlugins } from "./plugins/esbuild_deno_loader/mod.ts";
@@ -31,7 +32,7 @@ import { alias, awsS3Deploy, certbot, congrats, csv, head, install, nginx, readL
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.1.6';
+const VERSION = 'v1.1.7';
 const ESBUILD_MODE = Deno.env.get('ESBUILD_PLATFORM') || Deno.env.get('ESBUILD_MODE') || 'neutral';
 const ESBUILD_FORMAT = Deno.env.get('ESBUILD_FORMAT') || 'esm';
 const ESBUILD_TARGET = Deno.env.get('ESBUILD_TARGET') || 'esnext';
@@ -45,7 +46,7 @@ printASCII(VERSION);
 const cwd = Deno.cwd();
 
 const appsDir = existsSync(join(cwd, "src")) ? "src" : existsSync(join(cwd, "apps"))? "apps": existsSync(join(cwd, "microservices"))? "microservices": (Deno.env.get('SRC_DIR') || Deno.env.get('SERVICES_DIR') || 'services');
-const distDir = existsSync(join(cwd, "assets/js/")) ? "assets/js/" : existsSync(join(cwd, "static/"))? "static/": "dist";
+const distDir = existsSync(join(cwd, "assets/js/")) ? "assets/js/" : existsSync(join(cwd, "static/"))? "static/": existsSync(join(cwd, "wwwroot/"))? "wwwroot/": existsSync(join(cwd, Deno.env.get('DIST_DIR') || 'dist'))? (Deno.env.get('DIST_DIR') || 'dist'): "dist";
 const STATIC_DIR = Deno.env.get('STATIC_DIR') || '.';
 
 const args = Deno.args;
@@ -695,7 +696,7 @@ async function watchForBuild(appName: string) {
 function json_parse(filepath: string) {
   try {
     return JSON.parse(Deno.readTextFileSync(filepath));
-  } catch(e) { console.error('Ignoring: warn: json_parse', e); }
+  } catch(e) { console.error('warn: json_parse', filepath); return {}; }
 }
 
 function getExtraWatcheDirs(appDir: string) {
