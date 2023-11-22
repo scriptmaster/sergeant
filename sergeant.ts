@@ -1,6 +1,8 @@
 #!deno
 /// <reference lib="deno.ns" />
 import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js"; //v0.19.1 was better?
+import Babel from "https://esm.sh/@babel/standalone@7.18.8";
+
 //import { denoPlugins } from "https://esm.sh/gh/scriptmaster/esbuild_deno_loader@0.8.4/mod.ts";
 import { denoPlugins } from "./plugins/esbuild_deno_loader/mod.ts";
 import pluginVue from "https://esm.sh/esbuild-plugin-vue-next";
@@ -32,7 +34,7 @@ import { alias, awsS3Deploy, certbot, congrats, csv, head, install, nginx, readL
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.1.7';
+const VERSION = 'v1.1.8';
 const ESBUILD_MODE = Deno.env.get('ESBUILD_PLATFORM') || Deno.env.get('ESBUILD_MODE') || 'neutral';
 const ESBUILD_FORMAT = Deno.env.get('ESBUILD_FORMAT') || 'esm';
 const ESBUILD_TARGET = Deno.env.get('ESBUILD_TARGET') || 'esnext';
@@ -275,8 +277,71 @@ function getDenoJsonFile(appDir: string) {
   // // //
 }
 
+function changeExtensionTo(s: string, to: string) {
+  const lIO = s.lastIndexOf('.');
+  if (lIO > 0) { // at least one char for the name
+    const name = s.substring(0, lIO);
+    return name + '.' + (to.startsWith('.')? to.substring(1): to);
+  }
+  return '';
+}
+
+async function fetchContents(url: string) { try { return await (await fetch(url)).text() } catch(e) { console.error('fetchContents:', url, e) } };
+
+//<!--include=
+function includeHtml(html: string, appName?: string): string {
+  //const includeFile = async (p: string) => p.startsWith('//') || p.startsWith('https://') || p.startsWith('http://')? await fetchContents(p): join(app(appName), p);
+  const syncReadInclude = (a: string, b: string): string => { try { return includeHtml(Deno.readTextFileSync(join(appName? app(appName): '', b)), appName); } catch(e) { console.error('error:syncReadInclude:', appName, b, e.message); } return a; }
+  return html.replace(/\<\!\-\-.?include[\s\=\:](.+?)\-\-\>/g, syncReadInclude);
+}
+
+Deno.test({name:'test-include-html', fn() {
+  console.log(includeHtml('<h1>hi<!--include=alpine/modal.html--></h1>', 'nn'));
+}})
+
+async function buildJsxFiles(appName: string) {
+  const appDir = app(appName);
+
+  if (existsSync(join(appDir, 'mithril'))) {
+    const p = join(appDir, 'mithril');
+    readAllFiles(p, function(file) {
+      if (file.endsWith('.html') || file.endsWith('.htm')) {
+        buildMithril(file, appName);
+      }
+    });
+  }
+}
+
+async function buildMithril(file: string, appName: string) {
+  try {
+    const outfile = changeExtensionTo(file, 'js');
+    const contents = includeHtml(Deno.readTextFileSync(file), appName);
+    const outContents = babelPureFn(contents, 'm', '"["');
+    Deno.writeTextFileSync(outfile, outContents);
+
+    // const esopts = {
+    //   entryPoints: [file],
+    //   format: 'esm',
+    //   platform: 'neutral',
+    //   outfile,
+    // };
+    // const buildResult = await esbuild.build(esopts as esbuild.BuildOptions);
+    // console.log(buildResult);
+    return '';
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function babelPureFn(html: string, pragma = 'h', pragmaFragment = 'Fragment') { return 'export default function(m, Fragment) { return ' + babelTransformHtml( '<>' + html + '</>', pragma, pragmaFragment ) + '\n}\n' }
+function babelTransformHtml(html: string, pragma = 'h', pragmaFragment = 'Fragment') { return (Babel.transform(html, { presets: [['react', {pragma: pragma, pragmaFrag: pragmaFragment}], ], }).code || ''); /*.replace(/;$/, '');*/ }
+//function babelTransform(html: string, pragma = 'h', pragmaFragment = 'Fragment') { return babelTransformMinify(babelTransformHtml('<>'+html+'</>', pragma, pragmaFragment)) }
+//function babelTransformMinify(code: string) { return babelMinify(code, { mangle: { keepClassName: true, }, }).code; }
+
 async function buildApp(appName: string) {
   const appDir = app(appName);
+
+  await buildJsxFiles(appName);
 
   let entryFile = "main";
   let mainEntry = join(appDir, entryFile);
@@ -562,7 +627,7 @@ async function renderOutput(distDir: string, routes: RenderRoute[], routeFn: Rou
         // this is a file name;
         const layoutFile = join(appDir, shellFn as string);
         if(existsSync(layoutFile)) {
-          const layout = Deno.readTextFileSync(layoutFile);
+          const layout = includeHtml(Deno.readTextFileSync(layoutFile), basename(appDir));
           //4 regex: title, metas, html, script
           o.output = getHtmlShellByLayout(layout, o.output || '', o.state || {}, o.title || '', o.metas || [])
         } else {
@@ -619,7 +684,23 @@ function getMetas(metas?: Meta[]): string {
 
 
 
+function readAllFiles(from: string, predicate: (path: string) => void) {
+  if (!predicate) return;
+  for (const dirEntry of Deno.readDirSync(from)) {
+    if (dirEntry.name[0] == ".") continue;
+    if (dirEntry.isDirectory) {
+      // predicate(join(from, dirEntry.name));
+      readAllFiles(join(from, dirEntry.name), predicate);
+    } else if (dirEntry.isFile) {
+      predicate(join(from, dirEntry.name));
+    } else {
+      console.log("skipped: ", dirEntry.name);
+    }
+  }
+}
 
+const readDir = readAllFiles; const dirEntries = readDir;
+export const fileEntries = dirEntries;
 
 function copyFiles(from: string, to: string) {
   if (existsSync(from)) ensureDirSync(to);
@@ -636,7 +717,7 @@ function copyFiles(from: string, to: string) {
 }
 
 const debeounces: Record<string, number | undefined> = {};
-const DEFAULT_DEBOUT_TIMEOUT = 30;
+const DEFAULT_DEBOUT_TIMEOUT = 1000;
 
 type VoidFn = () => void;
 
@@ -646,11 +727,13 @@ function debounce(
   timeout: number = DEFAULT_DEBOUT_TIMEOUT,
 ) {
   const t = debeounces[key];
-  if (t) {
+  // console.log('deb:', t, key, debeounces);
+  if (t) { return; }
+  debeounces[key] = setTimeout(function() {
+    if (debeounces[key]) clearTimeout(debeounces[key]);
+    fn();
     debeounces[key] = undefined;
-    clearTimeout(t);
-  }
-  debeounces[key] = setTimeout(fn, timeout);
+  }, timeout);
 }
 
 async function watchForBuild(appName: string) {
@@ -683,15 +766,20 @@ async function watchForBuild(appName: string) {
       for (const p of event.paths) {
         const dn = dirname(p);
         if (!excludes.includes(dn)) {
-          debounce(appName, () => {
-            console.log("buildApp", dn);
-            buildApp(appName);
+          debounce(appName, async () => {
+            if (buildTimes && buildTimes.has(appName) && (buildTimes.get(appName)||0) > new Date().getTime() - NEXT_BUILD_WAIT_TIME) {
+              return console.log('Waiting alteast', NEXT_BUILD_WAIT_TIME, 'ms before building again...');
+            }
+            buildTimes.set(appName, new Date().getTime());
+            await buildApp(appName);
           });
         }
       }
     }
   }
 }
+const buildTimes = new Map<string, number>();
+const NEXT_BUILD_WAIT_TIME = 2000; // wait at least 2 seconds
 
 function json_parse(filepath: string) {
   try {
@@ -791,7 +879,7 @@ async function serveRefresh(appName: string, port: number) {
 
     const htmlFileName = "index.html";
     const htmlPath = join(root, htmlFileName);
-    const html = existsSync(htmlPath) ? Deno.readTextFileSync(htmlPath) : "";
+    const html = existsSync(htmlPath) ? includeHtml(Deno.readTextFileSync(htmlPath), appName) : "";
 
     return new Response(
       html.replace("</body>", refreshInjectScriptMinified + "</body>"),

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain.js</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/polished-react@18.2.23/dist/css/polished.min.css" />
+    <link rel="stylesheet" href="/main.css" />
+</head>
+<body data-bs-theme="light" class="page">
+    <header>
+        <nav class="navbar"></nav>
+    </header>
+    <main class="page-wrapper">
+        <hgroup class="page-header">
+            <h1 class="container">Brain JS</h1>
+        </hgroup>
+        <section class="page-body container">
+            <div id="color">
+                <div class="text-white">White Text</div>
+                <div class="text-black">Black Text</div>
+                <div id="ai-guess">AI Guess</div>
+            </div>
+
+            <section class="container">
+                <button class="btn btn-light btn-sm" id="train-white">White</button>
+                <button class="btn btn-dark btn-sm" id="train-black">Black</button>
+                <span id="training-size">0</span>
+                <button class="btn btn-primary btn-sm" id="guess-next">Guess Next</button>
+            </section>
+
+            <div id="nn-diagram"></div>
+        </section>
+    </main>
+    <!--include=alpine/modal.html-->
+    <script src="/main.js"></script>
+</body>
+</html>
