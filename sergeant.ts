@@ -316,7 +316,7 @@ async function buildMithril(file: string, appName: string) {
   try {
     const outfile = changeExtensionTo(file, 'js');
     const contents = includeHtml(Deno.readTextFileSync(file), appName);
-    const outContents = babelPureFn(contents, 'm', '"["');
+    const outContents = babelPureFn(contents, 'm', '"["', ['m', 'vnode'], ['const _vnode=vnode;']);
     Deno.writeTextFileSync(outfile, outContents);
 
     // const esopts = {
@@ -333,7 +333,7 @@ async function buildMithril(file: string, appName: string) {
   }
 }
 
-function babelPureFn(html: string, pragma = 'h', pragmaFragment = 'Fragment') { return 'export default function(m, Fragment) { return ' + babelTransformHtml( '<>' + html + '</>', pragma, pragmaFragment ) + '\n}\n' }
+function babelPureFn(html: string, pragma = 'h', pragmaFragment = 'Fragment', params: string[] = [], stmts: string[] = []) { return `export default function(${params.join(', ')}) {\n${stmts.join('\n')}\nreturn ${babelTransformHtml('<>' + html + '</>', pragma, pragmaFragment)}\n}\n`; }
 function babelTransformHtml(html: string, pragma = 'h', pragmaFragment = 'Fragment') { return (Babel.transform(html, { presets: [['react', {pragma: pragma, pragmaFrag: pragmaFragment}], ], }).code || ''); /*.replace(/;$/, '');*/ }
 //function babelTransform(html: string, pragma = 'h', pragmaFragment = 'Fragment') { return babelTransformMinify(babelTransformHtml('<>'+html+'</>', pragma, pragmaFragment)) }
 //function babelTransformMinify(code: string) { return babelMinify(code, { mangle: { keepClassName: true, }, }).code; }
