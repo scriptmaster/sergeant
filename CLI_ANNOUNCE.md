@@ -1,3 +1,4 @@
+# v1.1.9 includeHtml support
 # v1.1.8 mithril+alpine/include support
 # v1.1.7 DIST_DIR and wwwroot/ support
 # v1.1.6 service

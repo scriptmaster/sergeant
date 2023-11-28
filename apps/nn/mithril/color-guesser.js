@@ -1,4 +1,6 @@
-export default function(m, Fragment) { return m("[", null, m("div", {
+export default function(m, vnode) {
+const _vnode=vnode;
+return m("[", null, m("div", {
   id: "color"
 }, m("div", {
   class: "text-white"

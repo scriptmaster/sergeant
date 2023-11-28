@@ -34,7 +34,7 @@ import { alias, awsS3Deploy, certbot, congrats, csv, head, install, nginx, readL
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.1.8';
+const VERSION = 'v1.1.9';
 const ESBUILD_MODE = Deno.env.get('ESBUILD_PLATFORM') || Deno.env.get('ESBUILD_MODE') || 'neutral';
 const ESBUILD_FORMAT = Deno.env.get('ESBUILD_FORMAT') || 'esm';
 const ESBUILD_TARGET = Deno.env.get('ESBUILD_TARGET') || 'esnext';
@@ -449,7 +449,9 @@ async function buildApp(appName: string) {
     // let result: esbuild.BuildResult<esbuild.BuildOptions> = { errors: [], warnings: [], cout };
 
     const publicDir = join(appDir, "public");
-    if (existsSync(publicDir)) copyFiles(publicDir, dist(appName));
+    if (existsSync(publicDir)) {
+      copyFiles(publicDir, dist(appName));
+    }
 
     const printOutSize = (file = "") => {
       if (!existsSync(file)) return;
@@ -473,10 +475,11 @@ async function buildApp(appName: string) {
   try {
     const staticResult = await staticRender(appName, esopts, denoPluginOpts);
     if (staticResult) {
-      //console.log('staticResult:', staticResult);
-      const staticDir = join(dist(appName), STATIC_DIR);
-      const copyStaticFile = (file: string) => { if (existsSync(file)) Deno.copyFileSync(file, join(staticDir, basename(file))); }
+      console.log('static:', staticResult);
+      //const staticDir = join(dist(appName), STATIC_DIR);
 
+      // use: copyFiles instead which does includeHtml
+      //const copyStaticFile = (file: string) => { if (existsSync(file)) Deno.copyFileSync(file, join(staticDir, basename(file))); }
       //copyStaticFile(outfile)
       //copyStaticFile(outfile2)
     }
@@ -627,7 +630,7 @@ async function renderOutput(distDir: string, routes: RenderRoute[], routeFn: Rou
         // this is a file name;
         const layoutFile = join(appDir, shellFn as string);
         if(existsSync(layoutFile)) {
-          const layout = includeHtml(Deno.readTextFileSync(layoutFile), basename(appDir));
+          const layout = includeHtml(Deno.readTextFileSync(layoutFile), basename(appDir || distDir));
           //4 regex: title, metas, html, script
           o.output = getHtmlShellByLayout(layout, o.output || '', o.state || {}, o.title || '', o.metas || [])
         } else {
@@ -641,7 +644,7 @@ async function renderOutput(distDir: string, routes: RenderRoute[], routeFn: Rou
       }
 
       ensureDirSync(join(distDir, o.path));
-      Deno.writeTextFileSync(join(distDir, file), o.output || '');
+      Deno.writeTextFileSync(join(distDir, file), includeHtml(o.output || '', basename(appDir)));
     });
   }
 }
@@ -709,7 +712,14 @@ function copyFiles(from: string, to: string) {
     if (dirEntry.isDirectory) {
       copyFiles(join(from, dirEntry.name), join(to, dirEntry.name));
     } else if (dirEntry.isFile) {
-      Deno.copyFileSync(join(from, dirEntry.name), join(to, dirEntry.name));
+      // Deno.copyFileSync(join(from, dirEntry.name), join(to, dirEntry.name));
+      const fromFile = join(from, dirEntry.name);
+      const toFile = join(to, dirEntry.name);
+      if (fromFile.endsWith(".html") || fromFile.endsWith(".htm")) {
+        Deno.writeTextFileSync( toFile, includeHtml(Deno.readTextFileSync(fromFile), basename(to)) );
+      } else {
+        Deno.copyFileSync(fromFile, toFile);
+      }
     } else {
       console.log("skipped: ", dirEntry.name);
     }
