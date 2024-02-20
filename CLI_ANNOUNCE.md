@@ -1,3 +1,4 @@
+# v1.3.0 pathnext and buffer warning resolved
 # v1.2.0 multiEntry support with: ENTRIES=main,about sir
 # v1.1.10 reverted svelte (not ready)
 # v1.1.9 includeHtml support

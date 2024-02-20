@@ -1,5 +1,6 @@
 import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js"; //v0.19.1 was better?
-import Babel from "https://esm.sh/@babel/standalone@7.18.8";
+// import Babel from "https://esm.sh/@babel/standalone@7.18.8"; // causes typedarray issue
+import Babel from "https://esm.sh/@babel/standalone@7.23.10"; // causes typedarray issue
 
 //import { denoPlugins } from "https://esm.sh/gh/scriptmaster/esbuild_deno_loader@0.8.4/mod.ts";
 import { denoPlugins } from "./plugins/esbuild_deno_loader/mod.ts"; // path issue
@@ -34,7 +35,7 @@ import { alias, awsS3Deploy, certbot, congrats, csv, head, install, nginx, readL
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.2.0';
+const VERSION = 'v1.3.0';
 const ESBUILD_MODE = Deno.env.get('ESBUILD_PLATFORM') || Deno.env.get('ESBUILD_MODE') || 'neutral';
 const ESBUILD_FORMAT = Deno.env.get('ESBUILD_FORMAT') || 'esm';
 const ESBUILD_TARGET = Deno.env.get('ESBUILD_TARGET') || 'esnext';
@@ -116,8 +117,8 @@ if (!command && !existsSync(appsDir, { isDirectory: true })) {
       source();
       break;
     case /^(version|-v|--version|-version|v|info|about|-info|--info)$/i.test(command):
-      console.log(green(VERSION));
-      versionCheck();
+      // console.log(green(VERSION));
+      // versionCheck();
       break;
     default:
       console.log(gray('>'), command || '');
@@ -296,13 +297,13 @@ function includeHtml(html: string, appName?: string): string {
   return html.replace(/\<\!\-\-.?include[\s\=\:](.+?)\-\-\>/g, syncReadInclude);
 }
 
-// Deno.test({name:'test-include-html', fn() {
-//   console.log(includeHtml('<h1>hi<!--include=alpine/modal.html--></h1>', 'nn'));
-// }})
+Deno.test({name:'test-include-html', fn() {
+  console.log(includeHtml('<h1>hi<!--include=alpine/modal.html--></h1>', 'nn'));
+}})
 
-// Deno.test({name:'test-remote-html', fn() {
-//   console.log(includeHtml('<h1>hi<!--include=https://stream.msheriff.com/x-xl/header.html --></h1>', 'nn'));
-// }})
+Deno.test({name:'test-remote-html', fn() {
+  console.log(includeHtml('<h1>hi<!--include=https://stream.msheriff.com/x-xl/header.html --></h1>', 'nn'));
+}})
 
 async function buildJsxFiles(appName: string) {
   const appDir = app(appName);
@@ -339,7 +340,11 @@ async function buildMithril(file: string, appName: string) {
 }
 
 function babelPureFn(html: string, pragma = 'h', pragmaFragment = 'Fragment', params: string[] = [], stmts: string[] = []) { return `export default function(${params.join(', ')}) {\n${stmts.join('\n')}\nreturn ${babelTransformHtml('<>' + html + '</>', pragma, pragmaFragment)}\n}\n`; }
-function babelTransformHtml(html: string, pragma = 'h', pragmaFragment = 'Fragment') { return (Babel.transform(html, { presets: [['react', {pragma: pragma, pragmaFrag: pragmaFragment}], ], }).code || ''); /*.replace(/;$/, '');*/ }
+function babelTransformHtml(html: string, pragma = 'h', pragmaFragment = 'Fragment') {
+  // const trasnform = Babel.transform; // This browser lacks typed array (Uint8Array) support which is required by `buffer` v5.x. Use `buffer` v4.x if you require old browser support.
+  return (Babel.transform(html, { presets: [['react', {pragma: pragma, pragmaFrag: pragmaFragment}], ], }).code || '');
+  /*.replace(/;$/, '');*/
+}
 //function babelTransform(html: string, pragma = 'h', pragmaFragment = 'Fragment') { return babelTransformMinify(babelTransformHtml('<>'+html+'</>', pragma, pragmaFragment)) }
 //function babelTransformMinify(code: string) { return babelMinify(code, { mangle: { keepClassName: true, }, }).code; }
 
@@ -953,7 +958,6 @@ async function serveRefresh(appName: string, port: number) {
       }
     }
   }
-
 }
 
 function create(appType: string, appName?: string) {
