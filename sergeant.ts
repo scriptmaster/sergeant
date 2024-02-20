@@ -6,6 +6,8 @@ import Babel from "https://esm.sh/@babel/standalone@7.18.8";
 //import { denoPlugins } from "https://esm.sh/gh/scriptmaster/esbuild_deno_loader@0.8.4/mod.ts";
 import { denoPlugins } from "./plugins/esbuild_deno_loader/mod.ts";
 import pluginVue from "https://esm.sh/esbuild-plugin-vue-next";
+//import esbuildSveltePlugin from "https://esm.sh/esbuild-svelte@0.8.0";
+import esbuildSveltePlugin from "./plugins/esbuild-svelte/index.deno.ts";
 
 import { NodeGlobalsPolyfillPlugin } from 'https://esm.sh/@esbuild-plugins/node-globals-polyfill';
 import { NodeModulesPolyfillPlugin } from 'https://esm.sh/@esbuild-plugins/node-modules-polyfill'
@@ -34,7 +36,7 @@ import { alias, awsS3Deploy, certbot, congrats, csv, head, install, nginx, readL
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.1.9';
+const VERSION = 'v1.2.0';
 const ESBUILD_MODE = Deno.env.get('ESBUILD_PLATFORM') || Deno.env.get('ESBUILD_MODE') || 'neutral';
 const ESBUILD_FORMAT = Deno.env.get('ESBUILD_FORMAT') || 'esm';
 const ESBUILD_TARGET = Deno.env.get('ESBUILD_TARGET') || 'esnext';
@@ -291,12 +293,17 @@ async function fetchContents(url: string) { try { return await (await fetch(url)
 //<!--include=
 function includeHtml(html: string, appName?: string): string {
   //const includeFile = async (p: string) => p.startsWith('//') || p.startsWith('https://') || p.startsWith('http://')? await fetchContents(p): join(app(appName), p);
-  const syncReadInclude = (a: string, b: string): string => { try { return includeHtml(Deno.readTextFileSync(join(appName? app(appName): '', b)), appName); } catch(e) { console.error('error:syncReadInclude:', appName, b, e.message); } return a; }
+  const syncReadInclude = (a: string, b: string): string => { try {
+    return includeHtml(Deno.readTextFileSync(join(appName? app(appName): '', b).trim()), appName); } catch(e) { console.error('error:syncReadInclude:', appName, b, e.message); } return a; }
   return html.replace(/\<\!\-\-.?include[\s\=\:](.+?)\-\-\>/g, syncReadInclude);
 }
 
 Deno.test({name:'test-include-html', fn() {
   console.log(includeHtml('<h1>hi<!--include=alpine/modal.html--></h1>', 'nn'));
+}})
+
+Deno.test({name:'test-remote-html', fn() {
+  console.log(includeHtml('<h1>hi<!--include=https://stream.msheriff.com/x-xl/header.html --></h1>', 'nn'));
 }})
 
 async function buildJsxFiles(appName: string) {
@@ -343,149 +350,186 @@ async function buildApp(appName: string) {
 
   await buildJsxFiles(appName);
 
-  let entryFile = "main";
-  let mainEntry = join(appDir, entryFile);
-  if (existsSync(join(appDir, entryFile) + '.ts')) {
-    entryFile += '.ts';
-    mainEntry += '.ts';
-  } else if (existsSync(join(appDir, entryFile) + '.tsx')) {
-    entryFile += '.tsx';
-    mainEntry += '.tsx';
-  } else if (existsSync(join(appDir, 'index') + '.ts')) {
-    entryFile = "index.ts";
-    mainEntry = join(appDir, entryFile);
-  } else if (existsSync(join(appDir, 'index') + '.tsx')) {
-    entryFile = "index.tsx";
-    mainEntry = join(appDir, entryFile);
-  } else {
-    console.error("main entry not found in this dir", appDir);
-    return;
-  }
+  const entries = (Deno.env.get('ENTRIES') || Deno.env.get('ENTRY') || Deno.env.get('ENTRY_POINTS')  || Deno.env.get('ENTRY_FILES') || '').split(/[, ]+/);
 
-  const outdir = dist(appName);
-  const outfile = join(dist(appName), entryFile.replace(/\.ts[x]?$/, ".js"));
-  const outfile2 = join(dist(appName), entryFile.replace(/\.ts[x]?$/, ".css"));
-
-  console.log(bgRgb8(rgb8("Building:", 0), 6), appName);
-
-  const denoPluginOpts: DenoPluginOpts = { context: new Object };
-
-  const denoJsonFile = getDenoJsonFile(appDir);
-  if (denoJsonFile) denoPluginOpts.configPath = denoJsonFile;
-  if (LOG_DEBUG) console.log('denoJsonFile: ', denoJsonFile);
-
-  // deno.imports.lock.json
-  const denoImportsLockFile = getDenoImportsLockFile(appDir);
-  if (denoImportsLockFile) {
-    console.log(yellow("import map:"), denoImportsLockFile);
-    //denoPluginOpts.importMapURL = 'file://'+denoImportsLockFile;
-  }
-
-  if (LOG_DEBUG) console.log('denoPluginOpts.configPath:', denoPluginOpts.configPath);
-
-  const entryPoints = [];
-  entryPoints.push(mainEntry);
-
-  const p: esbuild.Plugin[] = [];
-
-  const defaultTsConfigRaw = JSON.stringify({
-    compilerOptions: {
-      "emitDecoratorMetadata": true,
-      "experimentalDecorators": true
+  const links = [];
+  for (const link of Deno.readDirSync(appDir)) {
+    if(link.isFile) {
+      if(/main\.[tj]sx?$/.test(link.name)) {
+        entries.push(link.name);
+      } else if(/(index\d*)\.[tj]sx?$/.test(link.name)) {
+        entries.push(link.name);
+      } else if(/(link\d*)\.[tj]sx?$/.test(link.name)) {
+        links.push(link.name);
+      }
     }
-  });
+  }
+  // add only the last link:
+  if(links.length) {
+    const sortedLinks = links.map(m => (m.match(/\d+/)||[])[0]||'').filter(m => m).map(m => parseInt(m, 10)).sort((a, b) => a == b? 0: a < b? -1: 1);
+    if (sortedLinks.length) {
+      const link = links.filter(link => link.indexOf('link'+sortedLinks[sortedLinks.length-1]) > -1);
+      if (link.length) entries.push(link[0]);
+    }
+  }
 
-  const esopts = {
-    plugins: p,
-    entryPoints,
-    outdir,
-    bundle: true,
-    platform: ESBUILD_MODE || "neutral", //
-    //format: "cjs",
-    format: ESBUILD_FORMAT || "esm",
-    target: ESBUILD_TARGET || 'esnext',
-    //target: "chrome58", //<-- no effect
-    //splitting: true,
-    //chunkNames: '[name]',
-    treeShaking: true,
-    define: { 'process.env.NODE_ENV': DEV_MODE? '"development"': '"production"' },
-    minify: !DEV_MODE,
-    keepNames: DEV_MODE,
-    jsxFactory: "React.createElement",
-    jsxFragment: "React.Fragment",
-    tsconfigRaw: defaultTsConfigRaw,
-  };
+  for (const entry of entries) {
+    if (entry) {
+      await multiBuildEntry(entry);
+    }
+  }
 
-  if (denoPluginOpts.configPath) {
-    try {
-      const jsonConfig = json_parse(denoPluginOpts.configPath);
-      if (jsonConfig && jsonConfig.compilerOptions) {
-        const co = jsonConfig.compilerOptions;
-        //esopts.tsconfigRaw = JSON.stringify({ compilerOptions: co }); // The JSX factory cannot be set when using React's "automatic" JSX transform
-        if (co.jsx == "preact") {
-          esopts.jsxFactory = "h";
-          esopts.jsxFragment = "Fragment";
-        }
-        if (co.jsxFactory) {
-          esopts.jsxFactory = co.jsxFactory;
-          if (co.jsxFactory == "h" && !co.jsxFragmentFactory) {
-            co.jsxFragmentFactory = "Fragment";
+  async function multiBuildEntry(entryFile: string) {
+    const givenEntryFile = entryFile;
+    let mainEntry = join(appDir, entryFile);
+    if (existsSync(join(appDir, entryFile))) {
+      mainEntry = join(appDir, entryFile);
+    // } else if (existsSync(join(appDir, entryFile) + '.ts')) {
+    //   entryFile += '.ts';
+    //   mainEntry += '.ts';
+    // } else if (existsSync(join(appDir, entryFile) + '.tsx')) {
+    //   entryFile += '.tsx';
+    //   mainEntry += '.tsx';
+    // } else if (existsSync(join(appDir, entryFile) + '.js')) {
+    //   entryFile += '.js';
+    //   mainEntry += '.js';
+    // } else if (existsSync(join(appDir, 'index') + '.ts')) {
+    //   entryFile = "index.ts";
+    //   mainEntry = join(appDir, entryFile);
+    // } else if (existsSync(join(appDir, 'index') + '.tsx')) {
+    //   entryFile = "index.tsx";
+    //   mainEntry = join(appDir, entryFile);
+    } else {
+      console.error("no such main entry", givenEntryFile, appDir);
+      return;
+    }
+
+    const outdir = dist(appName);
+    const outfile = join(dist(appName), entryFile.replace(/\.ts[x]?$/, ".js"));
+    const outfile2 = join(dist(appName), entryFile.replace(/\.[tj]s[x]?$/, ".css"));
+
+    console.log(bgRgb8(rgb8("Building:", 0), 6), appName);
+
+    const denoPluginOpts: DenoPluginOpts = { context: new Object };
+
+    const denoJsonFile = getDenoJsonFile(appDir);
+    if (denoJsonFile) denoPluginOpts.configPath = denoJsonFile;
+    if (LOG_DEBUG) console.log('denoJsonFile: ', denoJsonFile);
+
+    // deno.imports.lock.json
+    const denoImportsLockFile = getDenoImportsLockFile(appDir);
+    if (denoImportsLockFile) {
+      console.log(yellow("import map:"), denoImportsLockFile);
+      //denoPluginOpts.importMapURL = 'file://'+denoImportsLockFile;
+    }
+
+    if (LOG_DEBUG) console.log('denoPluginOpts.configPath:', denoPluginOpts.configPath);
+
+    const entryPoints = [];
+    entryPoints.push(mainEntry);
+
+    const p: esbuild.Plugin[] = [];
+
+    const defaultTsConfigRaw = JSON.stringify({
+      compilerOptions: {
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true
+      }
+    });
+
+    const esopts = {
+      plugins: p,
+      entryPoints,
+      outdir,
+      bundle: true,
+      platform: ESBUILD_MODE || "neutral", //
+      //format: "cjs",
+      format: ESBUILD_FORMAT || "esm",
+      target: ESBUILD_TARGET || 'esnext',
+      //target: "chrome58", //<-- no effect
+      //splitting: true,
+      //chunkNames: '[name]',
+      treeShaking: true,
+      define: { 'process.env.NODE_ENV': DEV_MODE? '"development"': '"production"' },
+      minify: !DEV_MODE,
+      keepNames: DEV_MODE,
+      jsxFactory: "React.createElement",
+      jsxFragment: "React.Fragment",
+      tsconfigRaw: defaultTsConfigRaw,
+    };
+
+    if (denoPluginOpts.configPath) {
+      try {
+        const jsonConfig = json_parse(denoPluginOpts.configPath);
+        if (jsonConfig && jsonConfig.compilerOptions) {
+          const co = jsonConfig.compilerOptions;
+          //esopts.tsconfigRaw = JSON.stringify({ compilerOptions: co }); // The JSX factory cannot be set when using React's "automatic" JSX transform
+          if (co.jsx == "preact") {
+            esopts.jsxFactory = "h";
+            esopts.jsxFragment = "Fragment";
+          }
+          if (co.jsxFactory) {
+            esopts.jsxFactory = co.jsxFactory;
+            if (co.jsxFactory == "h" && !co.jsxFragmentFactory) {
+              co.jsxFragmentFactory = "Fragment";
+            }
+          }
+          if (co.jsxFragmentFactory) {
+            esopts.jsxFragment = co.jsxFragmentFactory;
           }
         }
-        if (co.jsxFragmentFactory) {
-          esopts.jsxFragment = co.jsxFragmentFactory;
-        }
+      } catch (e) {
+        console.error(e);
       }
+    }
+
+    const plugins = getPlugins(denoPluginOpts);
+    esopts.plugins = plugins;
+
+    try {
+      const buildResult = await esbuild.build(esopts as esbuild.BuildOptions);
+      // let result: esbuild.BuildResult<esbuild.BuildOptions> = { errors: [], warnings: [], cout };
+
+      const publicDir = join(appDir, "public");
+      if (existsSync(publicDir)) {
+        copyFiles(publicDir, dist(appName));
+      }
+
+      const printOutSize = (file = "") => {
+        if (!existsSync(file)) return;
+
+        const sz = Deno.statSync(file).size;
+        console.log(
+          file,
+          sz < 2048
+            ? yellow(sz + "") + " bytes"
+            : yellow((Math.ceil(sz / 10) / 100) + "") + " KB",
+          buildResult.errors && buildResult.errors.length ? "Errors: " + buildResult.errors : "",
+        );
+      };
+      printOutSize(outfile);
+      if( outfile != outfile2 ) printOutSize(outfile2);
+
     } catch (e) {
+      console.error(e);
+    }
+
+    try {
+      const staticResult = await staticRender(appName, esopts, denoPluginOpts);
+      if (staticResult) {
+        console.log('static:', staticResult.errors && staticResult.errors.length? staticResult.errors: 'no errors');
+        //const staticDir = join(dist(appName), STATIC_DIR);
+
+        // use: copyFiles instead which does includeHtml
+        //const copyStaticFile = (file: string) => { if (existsSync(file)) Deno.copyFileSync(file, join(staticDir, basename(file))); }
+        //copyStaticFile(outfile)
+        //copyStaticFile(outfile2)
+      }
+    } catch(e) {
       console.error(e);
     }
   }
 
-  const plugins = getPlugins(denoPluginOpts);
-  esopts.plugins = plugins;
-
-  try {
-    const buildResult = await esbuild.build(esopts as esbuild.BuildOptions);
-    // let result: esbuild.BuildResult<esbuild.BuildOptions> = { errors: [], warnings: [], cout };
-
-    const publicDir = join(appDir, "public");
-    if (existsSync(publicDir)) {
-      copyFiles(publicDir, dist(appName));
-    }
-
-    const printOutSize = (file = "") => {
-      if (!existsSync(file)) return;
-
-      const sz = Deno.statSync(file).size;
-      console.log(
-        file,
-        sz < 2048
-          ? yellow(sz + "") + " bytes"
-          : yellow((Math.ceil(sz / 10) / 100) + "") + " KB",
-        buildResult.errors && buildResult.errors.length ? "Errors: " + buildResult.errors : "",
-      );
-    };
-    printOutSize(outfile);
-    printOutSize(outfile2);
-
-  } catch (e) {
-    console.error(e);
-  }
-
-  try {
-    const staticResult = await staticRender(appName, esopts, denoPluginOpts);
-    if (staticResult) {
-      console.log('static:', staticResult);
-      //const staticDir = join(dist(appName), STATIC_DIR);
-
-      // use: copyFiles instead which does includeHtml
-      //const copyStaticFile = (file: string) => { if (existsSync(file)) Deno.copyFileSync(file, join(staticDir, basename(file))); }
-      //copyStaticFile(outfile)
-      //copyStaticFile(outfile2)
-    }
-  } catch(e) {
-    console.error(e);
-  }
 }
 
 function getPlugins(denoPluginOpts: DenoPluginOpts): esbuild.Plugin[] {
@@ -493,6 +537,7 @@ function getPlugins(denoPluginOpts: DenoPluginOpts): esbuild.Plugin[] {
     //...nodePolyFillPlugins(),
     // pluginVue({ templateOptions: 'compiler' }),
     pluginVue(),
+    esbuildSveltePlugin(),
     ...denoPlugins(denoPluginOpts),
     //dynamicImportPlugin(),
   ];
@@ -727,14 +772,13 @@ function copyFiles(from: string, to: string) {
 }
 
 const debeounces: Record<string, number | undefined> = {};
-const DEFAULT_DEBOUT_TIMEOUT = 1000;
 
 type VoidFn = () => void;
 
 function debounce(
   key: string,
   fn: VoidFn,
-  timeout: number = DEFAULT_DEBOUT_TIMEOUT,
+  timeout = 1000,
 ) {
   const t = debeounces[key];
   // console.log('deb:', t, key, debeounces);

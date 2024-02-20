@@ -1,3 +1,5 @@
+# v1.2.0 multiEntry support with: ENTRIES=main,about sir
+# v1.1.10 reverted svelte (not ready)
 # v1.1.9 includeHtml support
 # v1.1.8 mithril+alpine/include support
 # v1.1.7 DIST_DIR and wwwroot/ support
