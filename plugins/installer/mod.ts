@@ -579,6 +579,7 @@ export function upgrade() {
     } else {
         const pwd = Deno.cwd();
         Deno.chdir(dir);
+        shell('git', ['stash']);
         shell('git', ['pull']);
         //shell('ls', ['-lah']);
         shell('deno', ['install', '-f', '-A', 'sergeant.ts']);
