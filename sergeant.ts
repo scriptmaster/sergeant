@@ -3,9 +3,9 @@ import Babel from "https://esm.sh/@babel/standalone@7.18.8";
 
 //import { denoPlugins } from "https://esm.sh/gh/scriptmaster/esbuild_deno_loader@0.8.4/mod.ts";
 import { denoPlugins } from "./plugins/esbuild_deno_loader/mod.ts"; // path issue
-import pluginVue from "https://esm.sh/esbuild-plugin-vue-next";
-//import esbuildSveltePlugin from "https://esm.sh/esbuild-svelte@0.8.0";
-import esbuildSveltePlugin from "./plugins/esbuild-svelte/index.deno.ts";
+// import pluginVue from "https://esm.sh/esbuild-plugin-vue-next";
+// import esbuildSveltePlugin from "https://esm.sh/esbuild-svelte@0.8.0";
+// import esbuildSveltePlugin from "./plugins/esbuild-svelte/index.deno.ts";
 
 import { NodeGlobalsPolyfillPlugin } from 'https://esm.sh/@esbuild-plugins/node-globals-polyfill';
 import { NodeModulesPolyfillPlugin } from 'https://esm.sh/@esbuild-plugins/node-modules-polyfill'
@@ -534,8 +534,8 @@ function getPlugins(denoPluginOpts: DenoPluginOpts): esbuild.Plugin[] {
   return [
     //...nodePolyFillPlugins(),
     // pluginVue({ templateOptions: 'compiler' }),
-    pluginVue(),
-    esbuildSveltePlugin(),
+    // pluginVue(),
+    // esbuildSveltePlugin(),
     ...denoPlugins(denoPluginOpts),
     //dynamicImportPlugin(),
   ];
