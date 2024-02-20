@@ -1,10 +1,8 @@
-#!deno
-/// <reference lib="deno.ns" />
 import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js"; //v0.19.1 was better?
 import Babel from "https://esm.sh/@babel/standalone@7.18.8";
 
 //import { denoPlugins } from "https://esm.sh/gh/scriptmaster/esbuild_deno_loader@0.8.4/mod.ts";
-import { denoPlugins } from "./plugins/esbuild_deno_loader/mod.ts";
+import { denoPlugins } from "./plugins/esbuild_deno_loader/mod.ts"; // path issue
 import pluginVue from "https://esm.sh/esbuild-plugin-vue-next";
 //import esbuildSveltePlugin from "https://esm.sh/esbuild-svelte@0.8.0";
 import esbuildSveltePlugin from "./plugins/esbuild-svelte/index.deno.ts";

@@ -1,8 +1,8 @@
 // deno std library
-export * as fs from "https://deno.land/std@0.83.0/fs/mod.ts";
-export * as path from "https://deno.land/std@0.83.0/path/mod.ts";
-export * as colors from "https://deno.land/std@0.83.0/fmt/colors.ts";
-export * as http from "https://deno.land/std@0.83.0/http/mod.ts";
+export * as fs from "https://deno.land/std@0.200.0/fs/mod.ts";
+export * as path from "https://deno.land/std@0.200.0/path/mod.ts";
+export * as colors from "https://deno.land/std@0.200.0/fmt/colors.ts";
+export * as http from "https://deno.land/std@0.200.0/http/mod.ts";
 export { v4 } from "https://deno.land/std@0.88.0/uuid/mod.ts"; //uuid generator
 export {
   assertEquals,
@@ -32,7 +32,9 @@ export { _, exec, ProgressBar };
 
 // compilers
 export { compile as scssCompiler } from "https://denopkg.com/crewdevio/deno_sass2/mod.ts";
-export * as sfcCompiler from "https://denopkg.com/crewdevio/vue-deno-compiler/mod.ts";
+
+// this was causing the issue for path-browserify issue
+// export * as sfcCompiler from "https://denopkg.com/crewdevio/vue-deno-compiler/mod.ts";
 
 //event emitter for live reload
 import { EventEmitter } from "https://deno.land/std@0.93.0/node/events.ts";
