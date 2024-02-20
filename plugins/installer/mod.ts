@@ -186,10 +186,10 @@ export function tool(name: string, existsCmd = '') {
 }
 
 export function shell(a: string, b: string | string[]) {
-    const o = sh(a, b);
-    console.log(o ? o.stdout || o.stderr || o.code : "");
-  }
-  
+  const o = sh(a, b);
+  console.log(o ? o.stdout || o.stderr || o.code : "");
+}
+
 export function sh(execPath: string, args: string | Array<string>) {
   try {
     const shell = Deno.env.get("SHELL") || "sh";
@@ -585,9 +585,7 @@ export function upgrade() {
         shell('deno', ['install', '-f', '-A', 'sergeant.ts']);
         Deno.chdir(pwd);
     }
-    return;
 }
-
 
 function migrate_csv() {
     //from = ['time', 'todo', 'done'];
