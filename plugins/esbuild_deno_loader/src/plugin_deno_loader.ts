@@ -6,6 +6,7 @@ import {
   IN_NODE_MODULES,
   IN_NODE_MODULES_RESOLVED,
 } from "./plugin_deno_resolver.ts";
+
 import {
   esbuildResolutionToURL,
   Loader,
@@ -401,8 +402,7 @@ function debug(...a: any[]) {
 
 type vueLoaderFn = (path: string) => string | Promise<string>;
 
-
-
+/*
 class VueLoader {
   context?: VueCompilerContext;
 
@@ -420,6 +420,7 @@ class VueLoader {
     if (!this.context.vueCompiler) {
       this.context.vueCompiler = (path: string) => path;
 
+      // this line was causing all the issues about path-browserify.js
       const { Loader } = await import('../../vue_loader/mod.ts');
       const loader = new Loader();
       this.context.vueCompiler = loader.vueCompiler.bind(loader);
@@ -437,8 +438,8 @@ class VueLoader {
     
     return contents;
   }
-
 }
+*/
 
 export interface VueCompilerContext {
   vueCompiler?: vueLoaderFn
@@ -606,5 +607,3 @@ export function builtinsPolyfills() {
 }
 
 const nodePolyfillsLibs = builtinsPolyfills();
-
-

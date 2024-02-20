@@ -70,11 +70,6 @@ Only need deno to install sergeant (esbuild is automatically imported):
 ## sergeant
 
 ```
-deno install -A -f -n sergeant https://denopkg.com/scriptmaster/sergeant/sergeant.ts
-```
-
-Install From JSDELIVR:
-```
 deno install -A -f https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@1.2.0/sergeant.ts
 ```
 
@@ -141,17 +136,6 @@ Create app level deno.json and configure watching extra deps:
 {
     "watch": "emeraldcss"
 }
-
-
-# denopkg.com
-
-To use GitHub as a package registry for Deno, you only need to replace github.com with denopkg.com like this:
-https://denopkg.com/user/repo or repo@tag/path/to/file
-
-Example:
-
-import { opn } from 'https://denopkg.com/hashrock/deno-opn/opn.ts'
-opn('https://denopkg.com')
 
 # web framework
 

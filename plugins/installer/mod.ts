@@ -27,13 +27,13 @@ export function install(arg1: string, version = "") {
     case "vendor":
       shell(
         "deno",
-        "install -A -f -n vendor https://denopkg.com/scriptmaster/sergeant/vendor.ts"
+        "install -A -f -n vendor https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@master/vendor.ts"
       );
       break;
     case "unpm":
       shell(
         "deno",
-        "install -A -f -n unpm https://denopkg.com/scriptmaster/sergeant/unpm.mjs"
+        "install -A -f -n unpm https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@master/unpm.mjs"
       );
       break;
     case "alosaur":
@@ -560,8 +560,8 @@ export function certbot() {
 }
 
 export function update() {
-    //const installUrl = `https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@nextof-${VERSION}/sergeant.ts` || 'https://denopkg.com/scriptmaster/sergeant/sergeant.ts';
-    const installUrl = `https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@master/sergeant.ts` || 'https://denopkg.com/scriptmaster/sergeant/sergeant.ts';
+    //const installUrl = `https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@nextof-${VERSION}/sergeant.ts` || 'https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@master/sergeant.ts';
+    const installUrl = `https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@master/sergeant.ts`
     //const installUrl = `https://raw.githubusercontent.com/scriptmaster/sergeant/master/sergeant.ts`; // https://raw.githubusercontent.com/
     console.log(green('installing from'), installUrl);
     shell('deno', `install -A -f -n sir ${installUrl}`);

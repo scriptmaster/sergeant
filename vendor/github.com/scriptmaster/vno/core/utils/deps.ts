@@ -31,10 +31,10 @@ import { exec } from "https://deno.land/x/exec/mod.ts";
 export { _, exec, ProgressBar };
 
 // compilers
-export { compile as scssCompiler } from "https://denopkg.com/crewdevio/deno_sass2/mod.ts";
+export { compile as scssCompiler } from "https://cdn.jsdelivr.net/gh/crewdevio/deno_sass2/mod.ts";
 
 // this was causing the issue for path-browserify issue
-// export * as sfcCompiler from "https://denopkg.com/crewdevio/vue-deno-compiler/mod.ts";
+// export * as sfcCompiler from "https://cdn.jsdelivr.net/gh/crewdevio/vue-deno-compiler/mod.ts";
 
 //event emitter for live reload
 import { EventEmitter } from "https://deno.land/std@0.93.0/node/events.ts";

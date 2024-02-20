@@ -296,13 +296,13 @@ function includeHtml(html: string, appName?: string): string {
   return html.replace(/\<\!\-\-.?include[\s\=\:](.+?)\-\-\>/g, syncReadInclude);
 }
 
-Deno.test({name:'test-include-html', fn() {
-  console.log(includeHtml('<h1>hi<!--include=alpine/modal.html--></h1>', 'nn'));
-}})
+// Deno.test({name:'test-include-html', fn() {
+//   console.log(includeHtml('<h1>hi<!--include=alpine/modal.html--></h1>', 'nn'));
+// }})
 
-Deno.test({name:'test-remote-html', fn() {
-  console.log(includeHtml('<h1>hi<!--include=https://stream.msheriff.com/x-xl/header.html --></h1>', 'nn'));
-}})
+// Deno.test({name:'test-remote-html', fn() {
+//   console.log(includeHtml('<h1>hi<!--include=https://stream.msheriff.com/x-xl/header.html --></h1>', 'nn'));
+// }})
 
 async function buildJsxFiles(appName: string) {
   const appDir = app(appName);
@@ -532,10 +532,10 @@ async function buildApp(appName: string) {
 
 function getPlugins(denoPluginOpts: DenoPluginOpts): esbuild.Plugin[] {
   return [
-    //...nodePolyFillPlugins(),
     // pluginVue({ templateOptions: 'compiler' }),
     // pluginVue(),
     // esbuildSveltePlugin(),
+    //...nodePolyFillPlugins(),
     ...denoPlugins(denoPluginOpts),
     //dynamicImportPlugin(),
   ];

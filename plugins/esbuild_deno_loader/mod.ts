@@ -7,6 +7,7 @@ import {
   type Scopes,
   type SpecifierMap,
 } from "./src/plugin_deno_resolver.ts";
+
 export {
   denoResolverPlugin,
   DenoResolverPluginOptions,
