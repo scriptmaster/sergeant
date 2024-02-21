@@ -58,75 +58,79 @@ const command = args[0];
 const app = (appName: string) => join(cwd, appsDir, appName);
 const dist = (appName: string) => join(cwd, distDir, appName);
 
-if (!command && !existsSync(appsDir, { isDirectory: true })) {
-  console.log("No src or apps dir found. Create App scaffolds available.");
-  lsRemoteScaffolds();
-  versionCheck();
-} else {
-  switch (true) {
-    case /^build$/i.test(command):
-      await buildApps(args[1] || "");
-      break;
-    case /^server?$/i.test(command):
-      await serveApps(args[1] || "");
-      break;
-    case /^map$/i.test(command):
-      //trex is not working, error: file
-      //await chooseAppForMap(args[1] || "");
-      break;
-    case /^(scaffold|create|new|n)$/i.test(command):
-      create(args[1] || "builder", args[2] || "app_builder");
-      break;
-    case /^(ls|list|ls-remote|ls_remote|scaffolds)$/i.test(command):
-      lsRemoteScaffolds(command);
-      break;
-    case /^(install|i)$/i.test(command):
-      install(args[1], args[2] || '');
-      break;
-    case /^(todo)$/i.test(command):
-      todo();
-      break;
-    case /^(head)$/i.test(command):
-      head();
-      break;
-    case /^(csv)$/i.test(command):
-      csv();
-      break;
-    case /^(aws|s3|aws-s3|s3-deploy|deploy-s3)$/i.test(command):
-      awsS3Deploy();
-      break;
-    case /^(nginx|nginx-site|nginx-add)$/i.test(command):
-      nginx();
-      break;
-    case /^(service|system|systemctl|systemd)$/i.test(command):
-      service();
-      break;
-    case /^(certbot)$/i.test(command):
-      certbot();
-      break;
-    case /^(up|upgrade)$/i.test(command):
-      upgrade();
-      break;
-    case /^(update)$/i.test(command):
-      update();
-      break;
-    case /^(alias)$/i.test(command):
-      alias();
-      break;
-    case /^(source)$/i.test(command):
-      source();
-      break;
-    case /^(version|-v|--version|-version|v|info|about|-info|--info)$/i.test(command):
-      // console.log(green(VERSION));
-      // versionCheck();
-      break;
-    default:
-      console.log(gray('>'), command || '');
-      if (args.includes('--serve')) await serveApps(command || '');
-      else await buildApps(command || "");
+async function main() {
+  if (!command && !existsSync(appsDir, { isDirectory: true })) {
+    console.log("No src, apps or services dir found. [SRC_DIR, DIST_DIR, STATIC_DIR] Create App scaffolds available.");
+    lsRemoteScaffolds();
+    versionCheck();
+  } else {
+    switch (true) {
+      case /^\W*help$/i.test(command):
+        console.log('SHOW HELP')
+        break;
+      case /^build$/i.test(command):
+        await buildApps(args[1] || "");
+        break;
+      case /^server?$/i.test(command):
+        await serveApps(args[1] || "");
+        break;
+      case /^map$/i.test(command):
+        //trex is not working, error: file
+        //await chooseAppForMap(args[1] || "");
+        break;
+      case /^(scaffold|create|new|n)$/i.test(command):
+        create(args[1] || "builder", args[2] || "app_builder");
+        break;
+      case /^(ls|list|ls-remote|ls_remote|scaffolds)$/i.test(command):
+        lsRemoteScaffolds(command);
+        break;
+      case /^(install|i)$/i.test(command):
+        install(args[1], args[2] || '');
+        break;
+      case /^(todo)$/i.test(command):
+        todo();
+        break;
+      case /^(head)$/i.test(command):
+        head();
+        break;
+      case /^(csv)$/i.test(command):
+        csv();
+        break;
+      case /^(aws|s3|aws-s3|s3-deploy|deploy-s3)$/i.test(command):
+        awsS3Deploy();
+        break;
+      case /^(nginx|nginx-site|nginx-add)$/i.test(command):
+        nginx();
+        break;
+      case /^(service|system|systemctl|systemd)$/i.test(command):
+        service();
+        break;
+      case /^(certbot)$/i.test(command):
+        certbot();
+        break;
+      case /^(up|upgrade)$/i.test(command):
+        upgrade();
+        break;
+      case /^(update)$/i.test(command):
+        update();
+        break;
+      case /^(alias)$/i.test(command):
+        alias();
+        break;
+      case /^(source)$/i.test(command):
+        source();
+        break;
+      case /^(version|-v|--version|-version|v|info|about|-info|--info)$/i.test(command):
+        // console.log(green(VERSION));
+        // versionCheck();
+        break;
+      default:
+        console.log(gray('>'), command || '');
+        if (args.includes('--serve')) await serveApps(command || '');
+        else await buildApps(command || "");
+    }
   }
 }
-// .deno/bin
 
 function decode(ui8a: Uint8Array) { return new TextDecoder().decode(ui8a); }
 
@@ -531,6 +535,20 @@ async function buildApp(appName: string) {
     } catch(e) {
       console.error(e);
     }
+  }
+
+  try {
+    // run post builds
+    postbuild(join(appDir, "build.sh"));
+    postbuild(join(appDir, "post-build.sh"));
+
+    function postbuild(shFile) {
+      if (!existsSync(shFile)) return;
+
+      // 
+    }
+  } catch(e) {
+    console.error(e);
   }
 
 }
@@ -1030,3 +1048,5 @@ function printASCII(version = 'v1.0.0') {
     //'Build to:', ESBUILD_PLATFORM, '\n'
   );
 }
+
+main();
