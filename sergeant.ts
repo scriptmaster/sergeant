@@ -492,6 +492,7 @@ async function buildApp(appName: string) {
 
     const plugins = getPlugins(denoPluginOpts);
     esopts.plugins = plugins;
+    const _distDir = dist(appName);
 
     try {
       const buildResult = await esbuild.build(esopts as esbuild.BuildOptions);
@@ -499,7 +500,7 @@ async function buildApp(appName: string) {
 
       const publicDir = join(appDir, "public");
       if (existsSync(publicDir)) {
-        copyFiles(publicDir, dist(appName));
+        copyFiles(publicDir, _distDir);
       }
 
       const printOutSize = (file = "") => {
@@ -507,15 +508,18 @@ async function buildApp(appName: string) {
 
         const sz = Deno.statSync(file).size;
         console.log(
-          file,
+          gray(_distDir) +
+          file.split(_distDir)[1],
           sz < 2048
             ? yellow(sz + "") + " bytes"
             : yellow((Math.ceil(sz / 10) / 100) + "") + " KB",
           buildResult.errors && buildResult.errors.length ? "Errors: " + buildResult.errors : "",
         );
       };
+      console.log(green('\nBuild completed. Bundle sizes:\n'));
       printOutSize(outfile);
       if( outfile != outfile2 ) printOutSize(outfile2);
+      console.log('-------------');
 
     } catch (e) {
       console.error(e);
@@ -544,8 +548,8 @@ async function buildApp(appName: string) {
 
     function postbuild(shFile) {
       if (!existsSync(shFile)) return;
-
-      // 
+      console.log(green('[Run postbuild]'), shFile);
+      shell('sh', [shFile], dist(appName));
     }
   } catch(e) {
     console.error(e);

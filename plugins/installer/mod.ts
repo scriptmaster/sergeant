@@ -185,25 +185,31 @@ export function tool(name: string, existsCmd = '') {
     }
 }
 
-export function shell(a: string, b: string | string[]) {
-  const o = sh(a, b);
+export function shell(cmd: string, args: string | string[], cwd?: string) {
+  const o = sh(cmd, args, cwd);
   console.log(o ? o.stdout || o.stderr || o.code : "");
 }
 
-export function sh(execPath: string, args: string | Array<string>) {
+export function sh(execPath: string, args: string | Array<string>, cwd?: string) {
   try {
     const shell = Deno.env.get("SHELL") || "sh";
     execPath =
-      typeof execPath == "undefined"
+      typeof execPath == "undefined" || execPath == "sh"
         ? shell
         : execPath == "" || execPath == "deno"
         ? Deno.execPath()
         : execPath;
-    const command = new Deno.Command(execPath || shell, {
+
+    // ... // ... //
+    const commandOptions: Deno.CommandOptions = {
       args: typeof args == "string" ? args.split(" ") : args,
-    });
+    };
+    if (cwd) commandOptions.cwd = cwd;
+
+    const command = new Deno.Command(execPath || shell, commandOptions);
 
     const { code, stdout, stderr } = command.outputSync();
+
     return {
       code,
       stdout: decode(stdout),
@@ -431,7 +437,13 @@ export function awsS3Deploy() {
   const appName = args[1] || prompt('Enter appName:') || '';
   shell('aws', 's3 ls');
   const s3BucketName = args[2] || prompt('Enter S3BucketName:') || '';
-  shell(`aws`, `s3 sync dist/${appName}/static/ s3://${s3BucketName}/`);
+  if (existsSync('dist/' + appName)) {
+    if (existsSync('dist/' + appName + '/static')) {
+      shell(`aws`, `s3 sync dist/${appName}/static/ s3://${s3BucketName}/`);
+    } else {
+      shell(`aws`, `s3 sync dist/${appName}/ s3://${s3BucketName}/`);
+    }
+  }
 }
 
 export function nginx() {
