@@ -147,15 +147,22 @@ export function denoResolverPlugin(
               return { path: args.path, namespace: args.namespace };
             } else if (/\.(woff|woff2|eot|otf|ttf|svg|png|jpe?g)$/.test(args.path)) {
               if (args.importer.endsWith('.css')) {
-                if (LOG_DEBUG) console.log('=====css :external:', args.importer);
-                console.log('=====css external[1]:', args.path, 'importer:', args.importer);
-                return { path: args.path, namespace: args.namespace, external: true };
-              }
-              console.log('======= args.importer:', args.importer, basename(args.importer));
+                if (LOG_DEBUG) console.log('=====css :font:', args.importer);
+                // console.log('=====css external[1]:', args.path, 'importer:', args.importer);
+                // return { path: args.path, namespace: args.namespace, external: true };
 
+                const fromImportedPath = new URL(fixPrefixNamespacePath(args.namespace, args.path),
+                  fixPrefixNamespacePath(args.namespace, args.importer)).toString();
+                if (LOG_DEBUG) console.log('Downloading font:', fromImportedPath);
+
+                return { path: fromImportedPath, namespace: args.namespace };
+              }
+              console.log('======= font external: args.importer:', args.importer, basename(args.importer));
+
+              return { path: args.path, namespace: args.namespace, external: true };
               const fromImportedPath = new URL(fixPrefixNamespacePath(args.namespace, args.path),
                 fixPrefixNamespacePath(args.namespace, args.importer)).toString();
-              console.log('====fromImportedPath', fromImportedPath);
+              console.log('==== Downloading font:', fromImportedPath);
 
               return { path: fromImportedPath, namespace: args.namespace };
             } else {

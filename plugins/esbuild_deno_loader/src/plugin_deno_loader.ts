@@ -329,6 +329,9 @@ export function denoLoaderPlugin(
           //   const contents = await loader.vue(args.path);
 
           //   return { loader: 'tsx', contents };
+        } else if (/\.(woff|woff2|eot|otf|ttf|svg|png|jpe?g)$/.test(args.path)) {
+          const contents = await getLocalOrRemoteFileContents(args);
+          return { loader: 'file', contents };
         } else if (args.namespace=='file' && !/(\.(tsx|ts|jsx|js))$/.test(args.path)) {
           if (Deno.env.get('LOG')=='DEBUG') console.log('CHECK FILE::', args.path);
           if(existsSync(args.path)) {

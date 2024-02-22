@@ -102,7 +102,6 @@ choco install deno
 ### MacOS: brew install deno
 
 
-
 # Deno Plugins:
 Uses:
 https://github.com/scriptmaster/esbuild_deno_loader
@@ -136,6 +135,9 @@ Create app level deno.json and configure watching extra deps:
 {
     "watch": "emeraldcss"
 }
+
+# mithril
+if an app dir contains mithril dir, its files (i.e., apps/appname/mithril/*.html or src/mithril/*.html) will be compiled as mithril files.
 
 # web framework
 
