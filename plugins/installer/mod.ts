@@ -27,7 +27,8 @@ export function install(arg1: string, version = "") {
     case "vendor":
       shell(
         "deno",
-        "install -A -f -n vendor https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@master/vendor.ts"
+        // "install -A -f -n vendor https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@master/vendor.ts"
+        "install -A -f -n vendor https://raw.githubusercontent.com/scriptmaster/sergeant/master/vendor.ts"
       );
       break;
     case "unpm":

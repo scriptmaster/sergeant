@@ -1,5 +1,5 @@
 #!deno
-// import * as esbuild from 'https://esm.sh/esbuild' 
+// import * as esbuild from 'https://esm.sh/esbuild'
 import * as path from "https://deno.land/std@0.201.0/path/mod.ts";
 import * as fs from "https://deno.land/std@0.201.0/fs/mod.ts";
 import { existsSync, ensureDirSync } from "https://deno.land/std@0.200.0/fs/mod.ts";
