@@ -239,7 +239,8 @@ function createPackageJson(name: string, version: string) {
         name,
         type: 'module',
         exports: {
-            '.': `./${version}.js`,
+            // '.': `./${version}.js`,
+            '.': `./index.js`,
             [version]: `./${version}.js`
         }
     };
