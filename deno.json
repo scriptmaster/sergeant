@@ -13,7 +13,8 @@
         "emeraldcss/": "https://unpkg.com/emeraldcss@1.0.1/",
         "antd": "https://esm.sh/antd",
         "@angular/cli": "https://esm.sh/@angular/cli",
-        "vendor": "https://esm.sh/vendor"
+        "vendor": "https://esm.sh/vendor",
+        "react-router-dom": "https://esm.sh/react-router-dom"
     },
     "compilerOptions": {
         "jsx": "react-jsx"
@@ -23,5 +24,12 @@
         "install": "deno install -A -f -n sergeant sergeant.ts",
         "install_vendor": "deno install -A -f -n vendor vendor.ts",
         "ssg": "deno task build ssg; denoliver dist/ssg/static/ -p 3300"
+    },
+    "deploy": {
+        "project": "8ced75ac-cfa0-4a9b-9783-c8a8e1b3aaf9",
+        "exclude": [
+            "**/node_modules"
+        ],
+        "entrypoint": "https://deno.land/std@0.217.0/http/file_server.ts"
     }
 }

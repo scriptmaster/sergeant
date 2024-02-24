@@ -1,25 +1,4 @@
 #!deno
-/*
-
-esbuild plugin: https://github.com/oliverkuchies/esbuild-usemin
-
-https://esm.sh/usemin@0.6.0
-
-https://esm.sh/usemin-cli@0.6.0
-
-https://github.com/nelsyeung/usemin
-
-var defaults = {
-	output: false, // HTML output path. If false, it will be printed to the console (string)
-	configFile: false, // config file path for UglifyJS, CleanCSS and HTML minifier (string)
-	config: false, // UglifyJS, CleanCSS and HTML minifier configs,
-	               // similar format to the config file (object)
-	htmlmin: false, // Whether to minify the input HTML file (Boolean)
-	noprocess: false, // Do not process files, just replace references (Boolean)
-	removeLivereload: false, // Remove livereload script (Boolean)
-};
-
-*/
 // import * as esbuild from 'https://esm.sh/esbuild' 
 import * as path from "https://deno.land/std@0.201.0/path/mod.ts";
 import * as fs from "https://deno.land/std@0.201.0/fs/mod.ts";
@@ -92,6 +71,7 @@ if(!packageName) {
 // const outdir = path.join(cwd, 'vendor/modules/');
 
 async function install(packageName: string, version = '', checkFile = false) {
+    if (packageName.includes('@')) { [packageName, version] = packageName.split('@') }
     const isFile = checkFile && existsSync(path.join(cwd, packageName)) && /\.[cm]?[jt]sx?$/.test(packageName);
     let filePackageName = '';
     if (isFile) {
@@ -184,8 +164,13 @@ function getDenoOpts(name: string) {
 function prepareInstallPackage(name: string, version: string) {
     //console.log('prepare', name, version);
     ensureDirSync(path.join(outdir, `${name}`));
+
     const inFile = path.join(outdir, `${name}/export.js`);
     Deno.writeTextFileSync(inFile, `export * from "${cdn(name, version)}";`);
+
+    const indexFile = path.join(outdir, `${name}/index.js`);
+    Deno.writeTextFileSync(indexFile, `export * from "./${version}.js";`);
+
     return inFile;
 }
 
@@ -250,8 +235,17 @@ function printOutSize(file: string) {
 };
 
 function createPackageJson(name: string, version: string) {
-    const packageJson: PackageJson = { name, type: 'module', exports: { '.': `./${version}.js`, [version]: `./${version}.js`} };
+    const packageJson: PackageJson = {
+        name,
+        type: 'module',
+        exports: {
+            '.': `./${version}.js`,
+            [version]: `./${version}.js`
+        }
+    };
+
     const packageJsonFile = `${outdir}/${name}/package.json`;
+
     // console.log('packageJsonFile', packageJsonFile);
     if (existsSync(packageJsonFile)) {
         const packageJsonRead = JSON.parse(Deno.readTextFileSync(packageJsonFile));
