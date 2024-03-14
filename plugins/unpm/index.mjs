@@ -801,6 +801,7 @@ function unpm_esbuild(customOptions) {
 
       build.onResolve({ filter: /.*/ }, function onResolve(args) {
         // console.log("build.onResolve:", args.pluginData, args.importer, args);
+        console.log("build.onResolve:", args);
         /*
         if (args.pluginData === IN_NODE_MODULES_RESOLVED) return args;
         if (args.pluginData === IN_NODE_MODULES) return undefined;
@@ -851,9 +852,13 @@ function unpm_esbuild(customOptions) {
         */
       });
 
-      build.onLoad({ filter: /\.example$/ }, async (args) => {
-        // ...
+      build.onLoad({ filter: /.+$/ }, async (args) => {
+        console.log('build.onLoad:', args);
       });
+
+      // build.onLoad({ filter: /\.example$/ }, async (args) => {
+      //   // ...
+      // });
 
       // build.onLoad();
     },

@@ -35,7 +35,7 @@ import { alias, awsS3Deploy, certbot, congrats, csv, head, install, nginx, readL
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.5.0';
+const VERSION = 'v1.6.0';
 const ESBUILD_MODE = Deno.env.get('ESBUILD_PLATFORM') || Deno.env.get('ESBUILD_MODE') || 'neutral';
 const ESBUILD_FORMAT = Deno.env.get('ESBUILD_FORMAT') || 'esm';
 const ESBUILD_TARGET = Deno.env.get('ESBUILD_TARGET') || 'esnext';
@@ -126,7 +126,7 @@ async function main() {
         break;
       default:
         console.log(gray('>'), command || '');
-        if (args.includes('--serve')) await serveApps(command || '');
+        if (args.includes('--serve') || args.includes('--watch') || args.includes('-w')) await serveApps(command || '');
         else await buildApps(command || "");
     }
   }

@@ -1,0 +1,3 @@
+# ensure nvm is installed and nvm install 18.18.0 is done
+$HOME/.nvm/versions/node/v18.18.0/bin/node $HOME/Projects/dev/deno/sergeant/unpm.mjs "$@"
+# bun $HOME/Projects/dev/deno/sergeant/unpm.mjs "$@"

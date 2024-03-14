@@ -301,6 +301,7 @@ export function denoLoaderPlugin(
       build.onResolve({ filter: /.*/, namespace: "data" }, onResolve);
       build.onResolve({ filter: /.*/, namespace: "npm" }, onResolve);
       build.onResolve({ filter: /.*/, namespace: "node" }, onResolve);
+      // build.onResolve({ filter: /.*/, namespace: "data" }, onResolve);
 
       async function onLoad(
         args: esbuild.OnLoadArgs,
@@ -310,6 +311,9 @@ export function denoLoaderPlugin(
         if (args.namespace === "file" && args.pluginData === IN_NODE_MODULES) {
           const contents = await Deno.readFile(args.path);
           return { loader: "js", contents };
+        }
+        if (args.namespace === "data") {
+          console.log('args for data:', args.namespace, args.path);
         }
         if (Deno.env.get('LOG')=='DEBUG') console.log('Loader::', args.path, args.namespace, !/(\.(tsx|ts|jsx|js)?)$/.test(args.path));
         if(/\.s?css$/.test(args.path)) {

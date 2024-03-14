@@ -1,35 +1,5 @@
 {
   "imports": {
-    "react": "https://unpkg.com/react@18.2.0/umd/react.production.min.js",
-    "react@18.2.0": "https://unpkg.com/react@18.2.0/umd/react.production.min.js",
-    "unpm": "https://cdn.jsdelivr.net/gh/scriptmaster/unpm@master/index.min.mjs",
-    "react-dom@18.2.0": "https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js/+esm",
-    "react-router@latest": "https://unpkg.com/react-router@6.16.0/dist/react-router.production.min.js",
-    "react-router@6.16.0": "https://unpkg.com/react-router@6.16.0/dist/react-router.production.min.js",
-    "react-dom/server@18.2.0": "https://unpkg.com/react-dom@18.2.0/umd/react-dom-server.browser.production.min.js"
-  },
-  "map": {
-    "react-dom": {
-      "cdn": [
-        "https://unpkg.com/"
-      ],
-      "umd": [
-        "umd"
-      ],
-      "production": [
-        ".production"
-      ]
-    },
-    "react-dom/server": {
-      "cdn": [
-        "https://unpkg.com/"
-      ],
-      "umd": [
-        "umd"
-      ],
-      "production": [
-        ".browser.production"
-      ]
-    }
+    "react@18.2.0": "https://unpkg.com/react@18.2.0/umd/react.production.min.js"
   }
 }

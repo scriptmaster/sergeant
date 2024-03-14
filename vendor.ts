@@ -25,7 +25,7 @@ const cdn = (name: string, version = '') => cdnUrl.replace('/\/$/', '') + '/' + 
 const latestVersions: Dict<string> = {};
 
 export interface Dict<T> { [Key: string]: T; }
-export interface PackageJson { name: string, type?: string, dependencies?: Dict<string>, devDependencies?: Dict<string>, exports?: Dict<string> }
+export interface PackageJson { name: string, type?: string, main?: string, dependencies?: Dict<string>, devDependencies?: Dict<string>, exports?: Dict<string> }
 
 if(!packageName) {
     let packageJson: PackageJson = { name: '' };
@@ -112,6 +112,7 @@ async function install(packageName: string, version = '', checkFile = false) {
             if (!existsSync(renameTo)) fs.ensureDir(renameTo);
 
             for await (const dirEntry of Deno.readDir(outdir)) {
+                // console.log(dirEntry.name); return;
                 if (dirEntry.isDirectory) {
                     const dirTo = join(renameTo, dirEntry.name)
                     if (existsSync(dirTo)) {
@@ -128,7 +129,8 @@ async function install(packageName: string, version = '', checkFile = false) {
 
 function getInstallName(packageName: string) {
     const name = packageName;
-    console.log(`Installing ${packageName} to: ${outdir} from ${green(cdn(name))}`);
+    console.log(`Installing ${yellow(packageName)} from ${green(cdn(name))}`);
+    // console.log(`Installing ${packageName} to: ${outdir} from ${green(cdn(name))}`);
     return name;
 }
 
@@ -238,21 +240,23 @@ function createPackageJson(name: string, version: string) {
     const packageJson: PackageJson = {
         name,
         type: 'module',
+        main: "./index.js",
         exports: {
             // '.': `./${version}.js`,
             '.': `./index.js`,
-            [version]: `./${version}.js`
+            // [version]: `./${version}.js`
         }
     };
 
-    const packageJsonFile = `${outdir}/${name}/package.json`;
+    const packageJsonFile = join(cwd, `${outdir}/${name}/package.json`);
 
-    // console.log('packageJsonFile', packageJsonFile);
+    console.log('packageJsonFile', packageJsonFile);
     if (existsSync(packageJsonFile)) {
+        console.log('exists::packageJsonFile', packageJsonFile);
         const packageJsonRead = JSON.parse(Deno.readTextFileSync(packageJsonFile));
         console.log(packageJsonRead.exports);
         for(const e in packageJsonRead.exports) {
-            //console.log('read.exports', e);
+            console.log('read.exports', e);
             packageJson.exports = Object.assign(packageJsonRead.exports, packageJson.exports);
         }
     }
