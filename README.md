@@ -2,7 +2,7 @@
 
 A lightweight micro-services producing deno-[p]react SSG-first SEO-friendly framework.
 
-For a new era of frontend development with NO hefty node_modules.
+For a new era of frontend development with NO node_modules GB of space in disk.
 
 + Produces bundles within seconds for 100s of apps.
 + Cross-compile from multiple projects
