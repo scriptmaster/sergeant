@@ -228,7 +228,9 @@ export function denoResolverPlugin(
               'vendor/$1/index.js', 'vendor/$1/mod.ts',
               'node_modules/$1/index.js', 'node_modules/$1/index.cjs', 'node_modules/$1/index.mjs'];
 
-            const refdir = dirname(referrer.pathname);
+            // const refdir = dirname(referrer.pathname); // This prefixes / on windows for example: /c:/
+            const refdir = dirname(args.importer); // this is more accurate in refering the importer file path, to resolve a relative path
+
             for (const lr of localResolution) {
               const lrp = join(refdir, lr.replace('$1', args.path));
               //console.log(refdir, lr, args.path, lrp);

@@ -23,6 +23,7 @@
         "build": "deno run -A sergeant.ts",
         "install": "deno install -A -f -n sergeant sergeant.ts",
         "install_vendor": "deno install -A -f -n vendor vendor.ts",
+        "debug": "deno run -A sergeant.ts nn",
         "ssg": "deno task build ssg; denoliver dist/ssg/static/ -p 3300"
     },
     "deploy": {

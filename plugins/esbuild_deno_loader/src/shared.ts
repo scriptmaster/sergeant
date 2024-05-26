@@ -60,6 +60,13 @@ export function urlToEsbuildResolution(url: URL): EsbuildResolution {
     return { path: fromFileUrl(url), namespace: "file" };
   }
 
+  if (Deno.build.os == "windows") {
+    if (url.protocol.length == 2 && /^[a-z]\:$/i.test(url.protocol)) {
+      // .. we have a drive protocol like c: or d: drive
+      return { path: url.href, namespace: "file" };
+    }
+  }
+
   const namespace = url.protocol.slice(0, -1);
   const path = url.href.slice(namespace.length + 1);
   return { path, namespace };
