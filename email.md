@@ -1,1 +1,1 @@
-techtonic@communicationcrafts.com
+for improvements and requests, create a GitHub issue.
