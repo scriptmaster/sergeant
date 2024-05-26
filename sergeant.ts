@@ -1,12 +1,6 @@
-import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js"; //v0.19.1 was better?
-// import Babel from "https://esm.sh/@babel/standalone@7.18.8"; // causes typedarray issue
-import Babel from "https://esm.sh/@babel/standalone@7.23.10"; // causes typedarray issue
-
-//import { denoPlugins } from "https://esm.sh/gh/scriptmaster/esbuild_deno_loader@0.8.4/mod.ts";
-import { denoPlugins } from "./plugins/esbuild_deno_loader/mod.ts"; // path issue
-// import pluginVue from "https://esm.sh/esbuild-plugin-vue-next";
-// import esbuildSveltePlugin from "https://esm.sh/esbuild-svelte@0.8.0";
-// import esbuildSveltePlugin from "./plugins/esbuild-svelte/index.deno.ts";
+import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
+import Babel from "https://esm.sh/@babel/standalone@7.23.10"; // For transpiling .html files to h() or m() calls.
+import { denoPlugins } from "./plugins/esbuild_deno_loader/mod.ts";
 
 import { NodeGlobalsPolyfillPlugin } from 'https://esm.sh/@esbuild-plugins/node-globals-polyfill';
 import { NodeModulesPolyfillPlugin } from 'https://esm.sh/@esbuild-plugins/node-modules-polyfill'
@@ -35,7 +29,7 @@ import { alias, awsS3Deploy, certbot, congrats, csv, head, install, nginx, readL
 // deno install -f -A sergeant.ts; sergeant serve
 
 const portRangeStart = 3000;
-const VERSION = 'v1.7.0';
+const VERSION = 'v1.7.1';
 const ESBUILD_MODE = Deno.env.get('ESBUILD_PLATFORM') || Deno.env.get('ESBUILD_MODE') || 'neutral';
 const ESBUILD_FORMAT = Deno.env.get('ESBUILD_FORMAT') || 'esm';
 const ESBUILD_TARGET = Deno.env.get('ESBUILD_TARGET') || 'esnext';
@@ -65,8 +59,11 @@ async function main() {
     versionCheck();
   } else {
     switch (true) {
-      case /^\W*help$/i.test(command):
-        console.log('SHOW HELP')
+      case /^\W*h(elp)?$/i.test(command):
+        // TODO: should do something like golang's cobra does
+        console.log('To get started:\n\tsergeant create [scaffold] [appname]\n\tsergeant create react [appname]\n\tsergeant create preact mypreactapp\n\tNote: `sergeant ls` to list all available [templates] to scaffold.\n');
+        console.log('To HMR serve:\n\tsergeant serve [appname]\n');
+        console.log('To build:\n\tsergeant build [appname]\n');
         break;
       case /^build$/i.test(command):
         await buildApps(args[1] || "");
@@ -79,6 +76,7 @@ async function main() {
         //await chooseAppForMap(args[1] || "");
         break;
       case /^(scaffold|create|new|n)$/i.test(command):
+        if (!args[1]) return lsRemoteScaffolds();
         create(args[1] || "builder", args[2] || "app_builder");
         break;
       case /^(ls|list|ls-remote|ls_remote|scaffolds)$/i.test(command):
@@ -121,8 +119,7 @@ async function main() {
         source();
         break;
       case /^(version|-v|--version|-version|v|info|about|-info|--info)$/i.test(command):
-        // console.log(green(VERSION));
-        // versionCheck();
+        versionCheck();
         break;
       default:
         console.log(gray('>'), command || '');
@@ -147,7 +144,7 @@ function lsRemoteScaffolds(command?: string): Array<string> {
   const scaffoldApps = list_remote_apps(command);
   scaffoldApps.map(s => console.log('\tsergeant create', s, 'my_'+s+'_app'));
 
-  const builderApp =  (prompt('Create a builder app? [y/N/scaffoldName]', 'N') || 'N').toLowerCase();
+  const builderApp =  (prompt('Create a builder app? [y/N/react] or type another scaffold name:', 'N') || 'N').toLowerCase();
   if (builderApp == 'y') {
     ensureDir(appsDir);
     create(args[1] || "builder", args[2] || 'my_builder_app');
@@ -160,8 +157,8 @@ function lsRemoteScaffolds(command?: string): Array<string> {
 
 function versionCheck() {
   try {
+    console.log(green('VERSION UPDATES\n==============='));
     fetch('https://raw.githubusercontent.com/scriptmaster/sergeant/master/CLI_ANNOUNCE.md').then((o) => {
-      // console.log(o.split('\n'));
       if(o.ok) {
         o.text().then(t => {
           const firstLine = t.split("\n")[0];
