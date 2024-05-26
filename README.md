@@ -74,7 +74,7 @@ Only need deno to install sergeant (esbuild is automatically imported):
 ## sergeant
 
 ```
-deno install -A -f https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@1.7.0/sergeant.ts
+deno install -A -f https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@1.7.1/sergeant.ts
 ```
 
 Only need deno and sergeant and you can do `sergeant` or `sergeant serve`
