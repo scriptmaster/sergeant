@@ -1,4 +1,5 @@
-# v1.5.0 sir install vendor && vendor react-router-dom
+# v1.7.0 Added windows support. Stable version.
+# v1.6.0 Support for data: svg url import resolution Stable version
 # v1.4.0 fonts loading from css + other fixes
 # v1.3.0 pathnext and buffer warning resolved
 # v1.2.0 multiEntry support with: ENTRIES=main,about sir
