@@ -499,33 +499,35 @@ export function nginx() {
   function getSiteContents(siteName: string, proxyPort: string) {
     return `
 server {
+	server_name ${siteName}; # managed by Certbot
+
+	location / {
+		proxy_pass http://127.0.0.1:${proxyPort};
+		include proxy_params;
+	}
+
 	# root /var/www/html;
 	# index index.html;
 
-  server_name ${siteName}; # managed by Certbot
-
-	location / {
-    proxy_pass http://127.0.0.1:${proxyPort};
-	}
-
-  listen [::]:443 ssl; # managed by Certbot
-  listen 443 ssl; # managed by Certbot
-  ssl_certificate /etc/letsencrypt/live/ai.msheriff.com-0002/fullchain.pem; # managed by Certbot
-  ssl_certificate_key /etc/letsencrypt/live/ai.msheriff.com-0002/privkey.pem; # managed by Certbot
-  include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
-  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+	listen [::]:443 ssl; # managed by Certbot
+	listen 443 ssl; # managed by Certbot
+	ssl_certificate /etc/letsencrypt/live/ai.msheriff.com-0002/fullchain.pem; # managed by Certbot
+	ssl_certificate_key /etc/letsencrypt/live/ai.msheriff.com-0002/privkey.pem; # managed by Certbot
+	include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+	ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
 }
 
 server {
-  if ($host = ${siteName}) {
-      return 301 https://$host$request_uri;
-  } # managed by Certbot
+	if ($host = ${siteName}) {
+		return 301 https://$host$request_uri;
+	} # managed by Certbot
 
-  listen 80 ;
-  listen [::]:80 ;
-    server_name ${siteName};
-    return 404; # managed by Certbot
-  }
+	listen 80 ;
+	listen [::]:80 ;
+	server_name ${siteName};
+
+	return 404; # managed by Certbot
+}
 `
 }
 
