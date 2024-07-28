@@ -1,3 +1,4 @@
+# v1.7.2 *NEW*
 # v1.7.1 Do: sergeant create app_builder myawesomeapp
 # v1.7.0 Added windows support. Stable version.
 # v1.6.0 Support for data: svg url import resolution Stable version
