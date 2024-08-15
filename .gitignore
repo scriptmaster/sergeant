@@ -16,3 +16,5 @@ archive
 node_modules/
 flow/
 tests
+plugins/esbuild-svelte
+sergeant_create_app
