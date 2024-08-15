@@ -1,15 +1,18 @@
 # About Sergeant
 
-A lightweight micro-services producing deno-[p]react SSG-first SEO-friendly framework.
+A lightweight micro-services producing deno-[p]react SSG-first SEO-friendly
+framework.
 
-For a new era of frontend development with NO node_modules (Save GB+ files on disk).
+For a new era of frontend development with NO node_modules (Save GB+ files on
+disk).
 
-+ Produces bundles within seconds for 100s of apps.
-+ Cross-compile from multiple projects
-+ Supports scss
-+ Scaffolding
-+ Has livereload
-+ denocacheusage: 10MB only, bundle sizes less than 20KB (if u use preact), and 200KB for react.
+- Produces bundles within seconds for 100s of apps.
+- Cross-compile from multiple projects
+- Supports scss
+- Scaffolding
+- Has livereload
+- denocacheusage: 10MB only, bundle sizes less than 20KB (if u use preact), and
+  200KB for react.
 
 Compare this with 200MB-400MB node_modules for a react hello world project.
 
@@ -17,7 +20,7 @@ Finally, you can `rimraf node_modules`.
 
 # Sergeant is production ready from Day-1
 
-✨ Sergeant 🫡      A front-end microservices framework! 
+✨ Sergeant 🫡 A front-end microservices framework!
 
 ```
 ███████╗███████╗██████╗  ██████╗ ███████╗ █████╗ ███╗   ██╗████████╗
@@ -52,15 +55,18 @@ Done
 ```
 
 ## Philosophy
+
 1. No breaking changes (versioned imports)
 2. SSG over SSR
 3. Always bundle to one-file for 1-SPA
 
 ### More...
+
 4. Support bundling multiple apps, SPAs via micro-services / app-routing
 5. Support progressive and offline apps
 
 # Commands
+
 ```
 sergeant
 sergeant build
@@ -69,46 +75,50 @@ sergeant serve --dev
 ```
 
 # Install
+
 Only need deno to install sergeant (esbuild is automatically imported):
 
 ## sergeant
 
 ```
-deno install -A -f https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@1.7.1/sergeant.ts
+deno install -A -f https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@1.8.0/sergeant.ts
 ```
 
 Only need deno and sergeant and you can do `sergeant` or `sergeant serve`
 
 ### Build All apps:
+
 `sergeant build`
 
 ### Live Dev Server all apps:
+
 `sergeant serve`
 
-
 ### Build specific app:
+
 `sergeant build`
 
 ### Live Dev Server specific app:
+
 `sergeant serve`
 
-
 ## Installing Deno
+
 https://docs.deno.com/runtime/manual/getting_started/installation
 
-### Windows x64: 
-Using PowerShell (Windows):
-irm https://deno.land/install.ps1 | iex
+### Windows x64:
+
+Using PowerShell (Windows): irm https://deno.land/install.ps1 | iex
 
 #### Or Using Chocolatey:
+
 choco install deno
 
 ### MacOS: brew install deno
 
-
 # Deno Plugins:
-Uses:
-https://github.com/scriptmaster/esbuild_deno_loader
+
+Uses: https://github.com/scriptmaster/esbuild_deno_loader
 https://deno.land/x/esbuild_plugin_sass_deno
 https://github.com/esbuild/community-plugins#plugins-for-deno
 
@@ -116,17 +126,20 @@ https://github.com/esbuild/community-plugins#plugins-for-deno
 
 How packages are downloaded?
 
-Packages are primarily downloaded as ESM modules from https://esm.sh/package/ (instead of registry.npmjs.org).
- + It can be swapped to use enterprise ESM packages repository.
- + Packages 
+Packages are primarily downloaded as ESM modules from https://esm.sh/package/
+(instead of registry.npmjs.org).
 
-The package can be looked up in ./vendor/ and ./node_modules/ in the format mod.ts index.mjs index.cjs index.js
+- It can be swapped to use enterprise ESM packages repository.
+- Packages
 
+The package can be looked up in ./vendor/ and ./node_modules/ in the format
+mod.ts index.mjs index.cjs index.js
 
 # DI
 
-React Context API is an incorrect implementation of a simple DI with prop drilling.
-In apps containing 20+ dependencies to provider, the context pattern could become 20+ nested nodes.
+React Context API is an incorrect implementation of a simple DI with prop
+drilling. In apps containing 20+ dependencies to provider, the context pattern
+could become 20+ nested nodes.
 
 DI enables you to directly provide the service/implementation for the consumer.
 
@@ -136,12 +149,12 @@ Extra watch dirs
 
 Create app level deno.json and configure watching extra deps:
 
-{
-    "watch": "emeraldcss"
-}
+{ "watch": "emeraldcss" }
 
 # mithril
-if an app dir contains mithril dir, its files (i.e., apps/appname/mithril/*.html or src/mithril/*.html) will be compiled as mithril files.
+
+if an app dir contains mithril dir, its files (i.e., apps/appname/mithril/_.html
+or src/mithril/_.html) will be compiled as mithril files.
 
 # web framework
 

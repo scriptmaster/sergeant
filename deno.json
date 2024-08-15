@@ -1,36 +1,37 @@
 {
-    "imports": {
-        "react": "https://esm.sh/react@18.2.0?prod",
-        "react-dom": "https://esm.sh/react-dom@18.2.0?prod",
-        "preact": "https://esm.sh/preact@10.17.1",
-        "preact-router": "https://esm.sh/preact-router@4.1.2",
-        "preact-render-to-string/jsx": "https://esm.sh/preact-render-to-string@6.2.1/jsx",
-        "@preact/compat": "https://esm.sh/@preact/compat@17.1.2",
-        "react-redux": "./vendor/github.com/react-redux/src/index.ts",
-        "vue": "https://esm.sh/vue@3.3.4",
-        "d3": "https://esm.sh/d3@7.8.5",
-        "emeraldcss": "https://unpkg.com/emeraldcss@1.0.1",
-        "emeraldcss/": "https://unpkg.com/emeraldcss@1.0.1/",
-        "antd": "https://esm.sh/antd",
-        "@angular/cli": "https://esm.sh/@angular/cli",
-        "vendor": "https://esm.sh/vendor",
-        "react-router-dom": "https://esm.sh/react-router-dom"
-    },
-    "compilerOptions": {
-        "jsx": "react-jsx"
-    },
-    "tasks": {
-        "build": "deno run -A sergeant.ts",
-        "install": "deno install -A -f -n sergeant sergeant.ts",
-        "install_vendor": "deno install -A -f -n vendor vendor.ts",
-        "debug": "deno run -A sergeant.ts nn",
-        "ssg": "deno task build ssg; denoliver dist/ssg/static/ -p 3300"
-    },
-    "deploy": {
-        "project": "8ced75ac-cfa0-4a9b-9783-c8a8e1b3aaf9",
-        "exclude": [
-            "**/node_modules"
-        ],
-        "entrypoint": "https://deno.land/std@0.217.0/http/file_server.ts"
-    }
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/": "https://esm.sh/react-dom@18.3.1/",
+    "preact": "https://esm.sh/preact@10.17.1",
+    "preact-router": "https://esm.sh/preact-router@4.1.2",
+    "preact-render-to-string/jsx": "https://esm.sh/preact-render-to-string@6.2.1/jsx",
+    "@preact/compat": "https://esm.sh/@preact/compat@17.1.2",
+    "react-redux": "./vendor/github.com/react-redux/src/index.ts",
+    "vue": "https://esm.sh/vue@3.3.4",
+    "d3": "https://esm.sh/d3@7.8.5",
+    "emeraldcss": "https://unpkg.com/emeraldcss@1.0.1",
+    "emeraldcss/": "https://unpkg.com/emeraldcss@1.0.1/",
+    "antd": "https://esm.sh/antd",
+    "@angular/cli": "https://esm.sh/@angular/cli",
+    "vendor": "https://esm.sh/vendor",
+    "react-router-dom": "https://esm.sh/react-router-dom"
+  },
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  },
+  "tasks": {
+    "build": "deno run -A sergeant.ts",
+    "install": "deno install -A -f -n sergeant sergeant.ts",
+    "install_vendor": "deno install -A -f -n vendor vendor.ts",
+    "debug": "deno run -A sergeant.ts nn",
+    "ssg": "deno task build ssg; denoliver dist/ssg/static/ -p 3300"
+  },
+  "deploy": {
+    "project": "8ced75ac-cfa0-4a9b-9783-c8a8e1b3aaf9",
+    "exclude": [
+      "**/node_modules"
+    ],
+    "entrypoint": "https://deno.land/std@0.217.0/http/file_server.ts"
+  }
 }
