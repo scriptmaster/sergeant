@@ -56,8 +56,8 @@ import {
 // To get started:
 // deno install -f -A sergeant.ts; sergeant serve
 
-const portRangeStart = 3000;
-const VERSION = "v1.7.2";
+const port = { RangeStart: 3000 };
+const VERSION = "v1.8.0";
 const ESBUILD_MODE = Deno.env.get("ESBUILD_PLATFORM") ||
   Deno.env.get("ESBUILD_MODE") || "neutral";
 const ESBUILD_FORMAT = Deno.env.get("ESBUILD_FORMAT") || "esm";
@@ -266,14 +266,28 @@ async function buildApps(appName = "") {
 }
 
 async function serveApps(appName: string) {
+  if (args.includes("--port")) {
+    const portIndex = args.indexOf("--port");
+    if (args[portIndex + 1] && parseInt(args[portIndex + 1], 10)) {
+      port.RangeStart = parseInt(args[portIndex + 1], 10);
+      // console.log("port RangeStart:", port.RangeStart);
+    }
+  }
+  if (args.includes("-p")) {
+    const portIndex = args.indexOf("-p");
+    if (args[portIndex + 1] && parseInt(args[portIndex + 1], 10)) {
+      port.RangeStart = parseInt(args[portIndex + 1], 10);
+      // console.log("port RangeStart:", port.RangeStart);
+    }
+  }
   if (appName && appName[0] != "-") { //do not mistake for a flag like: --dev
     if (!existsSync(app(appName))) {
       return console.log("No such app: ", app(appName));
     }
-    return await serveRefresh(appName, portRangeStart);
+    return await serveRefresh(appName, port.RangeStart);
   } else if (appsDir == "src") {
     console.log("Serving .");
-    await serveRefresh(".", portRangeStart);
+    await serveRefresh(".", port.RangeStart);
     return;
   }
 
@@ -283,7 +297,7 @@ async function serveApps(appName: string) {
   for await (const dirEntry of Deno.readDir(appsDir)) {
     if (dirEntry.isDirectory && dirEntry.name[0] != ".") {
       // const appDir = join(appsDir, dirEntry.name);
-      await serveRefresh(dirEntry.name, portRangeStart + servers);
+      await serveRefresh(dirEntry.name, port.RangeStart + servers);
       servers++;
     }
   }
