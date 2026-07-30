@@ -79,7 +79,7 @@ sergeant serve --dev
 Install Deno, then Sergeant (esbuild is automatically imported):
 
 ```sh
-deno install -g -A -f -n sergeant https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@v1.8.0/sergeant.ts
+deno install -g -A -f -n sergeant https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@v1.9.0/sergeant.ts
 ```
 
 From this repository: `deno task install`

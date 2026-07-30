@@ -1,3 +1,4 @@
+# v1.9.0 Deno 2 and esbuild 0.28 support
 # v1.8.0 port RangeStart can be specified via --port for serving apps
 # v1.7.2 *NEW*
 # v1.7.1 Do: sergeant create app_builder myawesomeapp

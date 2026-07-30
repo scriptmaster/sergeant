@@ -57,7 +57,7 @@ import {
 // deno install -f -A sergeant.ts; sergeant serve
 
 const port = { RangeStart: 3000 };
-const VERSION = "v1.8.0";
+const VERSION = "v1.9.0";
 const ESBUILD_MODE = Deno.env.get("ESBUILD_PLATFORM") ||
   Deno.env.get("ESBUILD_MODE") || "neutral";
 const ESBUILD_FORMAT = Deno.env.get("ESBUILD_FORMAT") || "esm";
