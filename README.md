@@ -76,15 +76,13 @@ sergeant serve --dev
 
 # Install
 
-Only need deno to install sergeant (esbuild is automatically imported):
+Install Deno, then Sergeant (esbuild is automatically imported):
 
-## sergeant
-
-```
-deno install -A -f https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@1.8.0/sergeant.ts
+```sh
+deno install -g -A -f -n sergeant https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@v1.8.0/sergeant.ts
 ```
 
-Only need deno and sergeant and you can do `sergeant` or `sergeant serve`
+From this repository: `deno task install`
 
 ### Build All apps:
 
