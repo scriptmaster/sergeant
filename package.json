@@ -2,8 +2,13 @@
   "name": "deno-sergeant",
   "version": "1.9.0",
   "description": "A lightweight micro-services producing deno-[p]react SSG-first SEO-friendly framework.",
-  "main": "index.js",
   "type": "module",
+  "bin": {
+    "sergeant": "bin/sergeant"
+  },
+  "files": [
+    "bin"
+  ],
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

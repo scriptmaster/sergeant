@@ -1,0 +1,2 @@
+#!/bin/sh
+exec deno run -A https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@v1.9.0/sergeant.ts "$@"

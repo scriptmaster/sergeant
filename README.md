@@ -82,6 +82,8 @@ Install Deno, then Sergeant (esbuild is automatically imported):
 deno install -g -A -f -n sergeant https://cdn.jsdelivr.net/gh/scriptmaster/sergeant@v1.9.0/sergeant.ts
 ```
 
+Or: `npm install -g deno-sergeant`
+
 From this repository: `deno task install`
 
 ### Build All apps:
