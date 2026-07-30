@@ -86,7 +86,7 @@ async function info(
   options: InfoOptions,
 ): Promise<InfoOutput> {
   const opts = {
-    args: ["info", "--json"],
+    args: ["info", "--json", "--allow-import"],
     cwd: undefined as string | undefined,
     env: { DENO_NO_PACKAGE_JSON: "true" } as Record<string, string>,
     stdout: "piped",
@@ -168,7 +168,7 @@ export class InfoCache {
   }
 
   async #load(specifier: string): Promise<void> {
-    const { modules, redirects, npmPackages } = await info(
+    const { modules = [], redirects = {}, npmPackages = {} } = await info(
       specifier,
       this.#options,
     );

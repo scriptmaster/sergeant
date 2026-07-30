@@ -1,4 +1,4 @@
-import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
+import * as esbuild from "https://deno.land/x/esbuild@v0.28.1/mod.js";
 import Babel from "https://esm.sh/@babel/standalone@7.23.10"; // For transpiling .html files to h() or m() calls.
 import { denoPlugins } from "./plugins/esbuild_deno_loader/mod.ts";
 

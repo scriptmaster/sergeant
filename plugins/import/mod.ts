@@ -9,9 +9,9 @@ import {
 	resolveModuleSpecifier,
 } from 'https://deno.land/x/importmap@0.2.1/mod.ts';
 
-import * as nativeEsbuild from 'https://deno.land/x/esbuild@v0.19.2/mod.js';
-import * as webAssemblyEsbuild from 'https://deno.land/x/esbuild@v0.19.2/wasm.js';
-import { denoPlugins } from 'https://deno.land/x/esbuild_deno_loader@0.8.1/mod.ts';
+import * as nativeEsbuild from 'https://deno.land/x/esbuild@v0.28.1/mod.js';
+import * as webAssemblyEsbuild from 'https://deno.land/x/esbuild@v0.28.1/wasm.js';
+import { denoPlugins } from '../esbuild_deno_loader/mod.ts';
 
 // NOTE Uncomplete
 interface CallSite {
